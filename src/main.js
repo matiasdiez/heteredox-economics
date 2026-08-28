@@ -40,6 +40,28 @@ const toastMessageEl = document.getElementById("toast-message");
 const viewGridBtn = document.getElementById("view-grid-btn");
 const viewListBtn = document.getElementById("view-list-btn");
 
+// Zotero DOM Elements & State
+const zoteroModal = document.getElementById("zotero-modal");
+const zoteroModalTrigger = document.getElementById("zotero-modal-trigger");
+const zoteroModalCloseBtn = document.getElementById("zotero-modal-close-btn");
+const zoteroCancelBtn = document.getElementById("zotero-cancel-btn");
+const zoteroConfigForm = document.getElementById("zotero-config-form");
+const zoteroUserIdInput = document.getElementById("zotero-user-id-input");
+const zoteroApiKeyInput = document.getElementById("zotero-api-key-input");
+const zoteroCollectionInput = document.getElementById("zotero-collection-input");
+const zoteroToggleKeyBtn = document.getElementById("zotero-toggle-key-visibility");
+const eyeIconOpen = document.getElementById("eye-icon-open");
+const eyeIconClosed = document.getElementById("eye-icon-closed");
+const zoteroStatusBox = document.getElementById("zotero-status-box");
+const zoteroStatusIcon = document.getElementById("zotero-status-icon");
+const zoteroStatusText = document.getElementById("zotero-status-text");
+const zoteroDisconnectBtn = document.getElementById("zotero-disconnect-btn");
+const zoteroSaveBtn = document.getElementById("zotero-save-btn");
+const zoteroHeaderStatusDot = document.getElementById("zotero-header-status-dot");
+
+let currentlyRenderedArticles = [];
+const savedZoteroLinks = new Set();
+
 // Top Stats Elements
 const statTotalArticles = document.getElementById("stat-total-articles");
 const statTotalJournals = document.getElementById("stat-total-journals");
@@ -160,6 +182,267 @@ function getCategoryBadgeClass(category) {
   if (cat.includes("award") || cat.includes("grant") || cat.includes("scholarship")) return "badge-cat-award";
   return "badge-cat-default";
 }
+
+// Check if article is eligible for Zotero (only Journals and Books/Book Series)
+function isZoteroEligible(art) {
+  if (!art || !art.category) return false;
+  const cat = art.category.toLowerCase().trim();
+  return cat === "journals" || cat.includes("journal") || cat.includes("book");
+}
+
+// Get Direct Article Link (for Books/Journals that have direct publisher links in external_links)
+function getPrimaryArticleLink(art) {
+  if (!art) return "#";
+  if (art.external_links && art.external_links.length > 0) {
+    const isNewsletterAnchor = (art.link || "").includes("heterodoxnews.com/n/htn");
+    if (isNewsletterAnchor) {
+      const extLink = art.external_links.find((l) => l.url && !l.url.includes("heterodoxnews.com"));
+      if (extLink && extLink.url) return extLink.url;
+    }
+  }
+  return art.link || art.newsletter_link || "#";
+}
+
+// Zotero API Integration Helpers
+function getZoteroConfig() {
+  const userId = (localStorage.getItem("zotero_user_id") || "").trim();
+  const apiKey = (localStorage.getItem("zotero_api_key") || "").trim();
+  const collectionKey = (localStorage.getItem("zotero_collection_key") || "").trim();
+  return { userId, apiKey, collectionKey, isConfigured: Boolean(userId && apiKey) };
+}
+
+function updateZoteroHeaderUI() {
+  const { isConfigured } = getZoteroConfig();
+  if (zoteroHeaderStatusDot) {
+    if (isConfigured) {
+      zoteroHeaderStatusDot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block shadow-xs";
+      zoteroHeaderStatusDot.title = "Zotero conectado y listo para guardar";
+    } else {
+      zoteroHeaderStatusDot.className = "w-2 h-2 rounded-full bg-base-content/30 inline-block";
+      zoteroHeaderStatusDot.title = "Zotero no configurado (haz clic para conectar)";
+    }
+  }
+}
+
+function openZoteroModal(prefillStatusMsg = null) {
+  const { userId, apiKey, collectionKey, isConfigured } = getZoteroConfig();
+  if (zoteroUserIdInput) zoteroUserIdInput.value = userId;
+  if (zoteroApiKeyInput) zoteroApiKeyInput.value = apiKey;
+  if (zoteroCollectionInput) zoteroCollectionInput.value = collectionKey;
+
+  if (zoteroDisconnectBtn) {
+    if (isConfigured) {
+      zoteroDisconnectBtn.classList.remove("hidden");
+    } else {
+      zoteroDisconnectBtn.classList.add("hidden");
+    }
+  }
+
+  if (prefillStatusMsg) {
+    showZoteroModalStatus(prefillStatusMsg.text, prefillStatusMsg.type);
+  } else if (isConfigured) {
+    showZoteroModalStatus(`Conectado con tu biblioteca (User ID: ${userId})`, "success");
+  } else {
+    hideZoteroModalStatus();
+  }
+
+  if (zoteroModal && typeof zoteroModal.showModal === "function") {
+    zoteroModal.showModal();
+  }
+}
+
+function closeZoteroModal() {
+  if (zoteroModal && typeof zoteroModal.close === "function") {
+    zoteroModal.close();
+  }
+}
+
+function showZoteroModalStatus(message, type = "info") {
+  if (!zoteroStatusBox || !zoteroStatusText) return;
+  zoteroStatusBox.classList.remove(
+    "hidden",
+    "bg-emerald-100",
+    "text-emerald-900",
+    "bg-error/15",
+    "text-error",
+    "bg-primary/10",
+    "text-primary",
+    "dark:bg-emerald-950/40",
+    "dark:text-emerald-300"
+  );
+
+  if (type === "success") {
+    zoteroStatusBox.classList.add("bg-emerald-100", "text-emerald-900", "dark:bg-emerald-950/40", "dark:text-emerald-300");
+    if (zoteroStatusIcon) {
+      zoteroStatusIcon.innerHTML = `<svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
+    }
+  } else if (type === "error") {
+    zoteroStatusBox.classList.add("bg-error/15", "text-error");
+    if (zoteroStatusIcon) {
+      zoteroStatusIcon.innerHTML = `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+    }
+  } else {
+    zoteroStatusBox.classList.add("bg-primary/10", "text-primary");
+    if (zoteroStatusIcon) {
+      zoteroStatusIcon.innerHTML = `<svg class="w-4 h-4 animate-spin shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+    }
+  }
+  zoteroStatusText.textContent = message;
+}
+
+function hideZoteroModalStatus() {
+  if (zoteroStatusBox) zoteroStatusBox.classList.add("hidden");
+}
+
+function parseCreators(authorStr) {
+  if (!authorStr || typeof authorStr !== "string") return [];
+  const parts = authorStr.split(/\s*(?:,| and | y | & )\s*/i).filter(Boolean);
+  return parts.map((name) => {
+    const clean = name.trim();
+    const spaceIndex = clean.lastIndexOf(" ");
+    if (spaceIndex > 0) {
+      return {
+        creatorType: "author",
+        firstName: clean.substring(0, spaceIndex).trim(),
+        lastName: clean.substring(spaceIndex + 1).trim()
+      };
+    }
+    return {
+      creatorType: "author",
+      name: clean
+    };
+  });
+}
+
+function formatArticleForZotero(art, collectionKey) {
+  const creators = parseCreators(art.author);
+  const primaryLink = getPrimaryArticleLink(art);
+  const tags = [
+    { tag: "Heterodox Economics" },
+    { tag: `Issue #${art.issue_num}` }
+  ];
+  if (art.category) tags.push({ tag: art.category });
+  if (art.journal) tags.push({ tag: art.journal });
+
+  const collections = collectionKey && collectionKey.trim() ? [collectionKey.trim()] : undefined;
+  const isJournal = art.category === "Journals" || Boolean(art.journal);
+  const isBook = (art.category || "").toLowerCase().includes("book");
+
+  if (isJournal) {
+    return {
+      itemType: "journalArticle",
+      title: art.title || "Sin título",
+      creators: creators,
+      publicationTitle: art.journal || "",
+      date: art.issue_date || "",
+      url: primaryLink,
+      abstractNote: art.body_text || "",
+      extra: `Newsletter Issue #${art.issue_num}\nContext: ${art.newsletter_link || art.link}${art.deadline ? `\nDeadline: ${art.deadline}` : ""}`,
+      tags: tags,
+      ...(collections ? { collections } : {})
+    };
+  }
+
+  if (isBook) {
+    return {
+      itemType: "book",
+      title: art.title || "Sin título",
+      creators: creators,
+      date: art.issue_date || "",
+      url: primaryLink,
+      abstractNote: art.body_text || "",
+      extra: `Newsletter Issue #${art.issue_num}\nContext: ${art.newsletter_link || art.link}`,
+      tags: tags,
+      ...(collections ? { collections } : {})
+    };
+  }
+
+  return {
+    itemType: "webpage",
+    title: art.title || "Sin título",
+    creators: creators.length > 0 ? creators : undefined,
+    websiteTitle: "Heterodox Economics Newsletter",
+    date: art.issue_date || "",
+    url: primaryLink,
+    abstractNote: art.body_text || "",
+    extra: `${art.deadline ? `Deadline: ${art.deadline}\n` : ""}Newsletter Issue #${art.issue_num}\nContext: ${art.newsletter_link || art.link}`,
+    tags: tags,
+    ...(collections ? { collections } : {})
+  };
+}
+
+
+async function saveArticleToZotero(art, buttonEl) {
+  const config = getZoteroConfig();
+  if (!config.isConfigured) {
+    openZoteroModal({
+      text: "Ingresa tu User ID y API Key de Zotero para activar el guardado directo en 1 clic.",
+      type: "info"
+    });
+    return;
+  }
+
+  const originalHtml = buttonEl.innerHTML;
+  buttonEl.classList.add("btn-zotero-loading");
+  buttonEl.disabled = true;
+  buttonEl.innerHTML = `
+    <svg class="w-3.5 h-3.5 animate-spin shrink-0 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+    </svg>
+    <span>Guardando...</span>
+  `;
+
+  try {
+    const payload = [formatArticleForZotero(art, config.collectionKey)];
+    const res = await fetch(`https://api.zotero.org/users/${config.userId}/items`, {
+      method: "POST",
+      headers: {
+        "Zotero-API-Key": config.apiKey,
+        "Content-Type": "application/json",
+        "Zotero-API-Version": "3"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.status === 200 || res.status === 201) {
+      savedZoteroLinks.add(art.link);
+      buttonEl.classList.remove("btn-zotero-loading");
+      buttonEl.classList.add("btn-zotero-saved");
+      buttonEl.disabled = true;
+      buttonEl.innerHTML = `
+        <svg class="w-3.5 h-3.5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span>¡Guardado!</span>
+      `;
+      showToast("¡Guardado con éxito en tu biblioteca de Zotero! 📚");
+    } else if (res.status === 403 || res.status === 401) {
+      buttonEl.disabled = false;
+      buttonEl.classList.remove("btn-zotero-loading");
+      buttonEl.innerHTML = originalHtml;
+      showToast("Error de acceso: Verifica tu API Key de Zotero.");
+      openZoteroModal({
+        text: "La API Key ingresada no es válida o no tiene permisos de escritura.",
+        type: "error"
+      });
+    } else {
+      const errText = await res.text();
+      console.error("Zotero API Error:", res.status, errText);
+      buttonEl.disabled = false;
+      buttonEl.classList.remove("btn-zotero-loading");
+      buttonEl.innerHTML = originalHtml;
+      showToast(`Error al guardar en Zotero (${res.status})`);
+    }
+  } catch (err) {
+    console.error("Error connecting to Zotero API:", err);
+    buttonEl.disabled = false;
+    buttonEl.classList.remove("btn-zotero-loading");
+    buttonEl.innerHTML = originalHtml;
+    showToast("Error de conexión con los servidores de Zotero.");
+  }
+}
+
 
 // Load Data
 async function loadData() {
@@ -421,23 +704,37 @@ function renderArticles() {
   }
 
   // Render Based on View Mode
+  currentlyRenderedArticles = filtered;
   if (viewMode === "list") {
-    articlesContainer.innerHTML = filtered.map((art) => renderListRow(art)).join("");
+    articlesContainer.innerHTML = filtered.map((art, idx) => renderListRow(art, idx)).join("");
   } else {
-    articlesContainer.innerHTML = filtered.map((art) => renderGridCard(art)).join("");
+    articlesContainer.innerHTML = filtered.map((art, idx) => renderGridCard(art, idx)).join("");
   }
 }
 
 // Compact Row Template (With 10% visible borders & AAA contrast)
-function renderListRow(art) {
+function renderListRow(art, idx) {
   const isJournal = art.category === "Journals" && art.journal;
   const badgeClass = getCategoryBadgeClass(art.category);
+  const isSaved = savedZoteroLinks.has(art.link);
+  const canSaveZotero = isZoteroEligible(art);
+  const primaryLink = getPrimaryArticleLink(art);
   
   const deadlineBadge = art.deadline
     ? `<span class="badge badge-deadline text-[11px] font-bold flex items-center gap-1 shrink-0 rounded-md">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span>Plazo: ${art.deadline}</span>
       </span>`
+    : "";
+
+  const zoteroBtnHtml = canSaveZotero
+    ? `<button type="button" class="btn btn-xs btn-zotero ${isSaved ? 'btn-zotero-saved' : ''} gap-1 font-bold rounded-lg" data-zotero-index="${idx}" title="Guardar en mi biblioteca de Zotero" ${isSaved ? 'disabled' : ''}>
+        ${
+          isSaved
+            ? `<svg class="w-3.5 h-3.5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg><span>¡Guardado!</span>`
+            : `<svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/></svg><span>Zotero</span>`
+        }
+      </button>`
     : "";
 
   return `
@@ -451,7 +748,7 @@ function renderListRow(art) {
         </div>
 
         <h3 class="text-sm sm:text-base font-extrabold text-base-content hover:text-primary transition-colors leading-snug">
-          <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="hover:underline">
+          <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="hover:underline">
             ${art.title}
           </a>
         </h3>
@@ -464,7 +761,8 @@ function renderListRow(art) {
       </div>
 
       <div class="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 w-full sm:w-auto justify-end">
-        <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg" title="Abrir enlace original">
+        ${zoteroBtnHtml}
+        <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg" title="Abrir enlace directo">
           <span>Abrir</span>
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
         </a>
@@ -477,10 +775,23 @@ function renderListRow(art) {
 }
 
 // Grid Card Template (With 10% visible borders and Color Hunt palette)
-function renderGridCard(art) {
+function renderGridCard(art, idx) {
   const isJournal = art.category === "Journals" && art.journal;
   const badgeClass = getCategoryBadgeClass(art.category);
+  const isSaved = savedZoteroLinks.has(art.link);
+  const canSaveZotero = isZoteroEligible(art);
+  const primaryLink = getPrimaryArticleLink(art);
   
+  const zoteroBtnHtml = canSaveZotero
+    ? `<button type="button" class="btn btn-xs btn-zotero ${isSaved ? 'btn-zotero-saved' : ''} gap-1 font-bold rounded-lg shadow-xs" data-zotero-index="${idx}" title="Guardar en mi biblioteca de Zotero" ${isSaved ? 'disabled' : ''}>
+        ${
+          isSaved
+            ? `<svg class="w-3.5 h-3.5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg><span>¡Guardado!</span>`
+            : `<svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/></svg><span>Zotero</span>`
+        }
+      </button>`
+    : "";
+
   const deadlineHtml = art.deadline
     ? `<div class="badge badge-deadline text-xs font-bold px-2.5 py-1 rounded-md mt-2 flex items-center gap-1.5 w-fit">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -488,17 +799,19 @@ function renderGridCard(art) {
       </div>`
     : "";
 
-  // Filter external links: Eliminate "Abrir Artículo" / "Abrir enlace" and any duplicate of art.link
+  // Filter external links: Eliminate "Abrir Artículo" / "Abrir enlace", primary link, and duplicates
+  const cleanPrimaryUrl = (primaryLink || "").trim().replace(/\/$/, "");
+  const cleanMainUrl = (art.link || "").trim().replace(/\/$/, "");
+
   const relevantExtLinks = (art.external_links || []).filter((l) => {
     const cleanUrl = (l.url || "").trim().replace(/\/$/, "");
-    const cleanMainUrl = (art.link || "").trim().replace(/\/$/, "");
     const textLower = (l.text || "").trim().toLowerCase();
     
-    // Check if duplicate of main link
-    if (cleanUrl === cleanMainUrl) return false;
+    // Check if duplicate of main link or primary link
+    if (cleanUrl === cleanMainUrl || cleanUrl === cleanPrimaryUrl) return false;
     
-    // Check if generic "Abrir artículo" / "Abrir enlace" label
-    if (textLower === "abrir artículo" || textLower === "abrir articulo" || textLower === "abrir enlace" || textLower === "abrir") {
+    // Check if generic "Abrir artículo" / "Abrir enlace" label or "here"
+    if (textLower === "abrir artículo" || textLower === "abrir articulo" || textLower === "abrir enlace" || textLower === "abrir" || textLower === "here") {
       return false;
     }
     
@@ -541,7 +854,7 @@ function renderGridCard(art) {
 
         <!-- Title -->
         <h3 class="font-extrabold text-base leading-snug text-base-content group-hover:text-primary transition-colors">
-          <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="hover:underline">
+          <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="hover:underline">
             ${art.title}
           </a>
         </h3>
@@ -568,12 +881,15 @@ function renderGridCard(art) {
         ${extLinksHtml}
       </div>
 
-      <!-- Footer Actions with High Contrast Buttons -->
+      <!-- Footer Actions: Shortened "Abrir", Conditional "Zotero", and "En newsletter" -->
       <div class="bg-base-200/60 px-6 py-3.5 border-t border-base-300/60 flex items-center justify-between gap-2">
-        <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg shadow-xs">
-          <span>Abrir Enlace</span>
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-        </a>
+        <div class="flex items-center gap-2">
+          <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg shadow-xs" title="Abrir enlace directo">
+            <span>Abrir</span>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+          ${zoteroBtnHtml}
+        </div>
         <a href="${art.newsletter_link || art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-xs border-base-300 text-base-content hover:bg-secondary hover:text-white hover:border-secondary font-bold gap-1.5 px-3 py-1.5 rounded-lg transition-all" title="Ver contexto completo en newsletter">
           <span>En newsletter</span>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
@@ -689,7 +1005,129 @@ function setupEventListeners() {
     });
   }
 
-  // Global Keyboard Shortcuts (/ to search, Escape to blur)
+  // Zotero Modal Triggers & Form Listeners
+  if (zoteroModalTrigger) {
+    zoteroModalTrigger.addEventListener("click", () => openZoteroModal());
+  }
+
+  if (zoteroModalCloseBtn) {
+    zoteroModalCloseBtn.addEventListener("click", () => closeZoteroModal());
+  }
+
+  if (zoteroCancelBtn) {
+    zoteroCancelBtn.addEventListener("click", () => closeZoteroModal());
+  }
+
+  if (zoteroToggleKeyBtn && zoteroApiKeyInput) {
+    zoteroToggleKeyBtn.addEventListener("click", () => {
+      if (zoteroApiKeyInput.type === "password") {
+        zoteroApiKeyInput.type = "text";
+        if (eyeIconOpen) eyeIconOpen.classList.add("hidden");
+        if (eyeIconClosed) eyeIconClosed.classList.remove("hidden");
+      } else {
+        zoteroApiKeyInput.type = "password";
+        if (eyeIconOpen) eyeIconOpen.classList.remove("hidden");
+        if (eyeIconClosed) eyeIconClosed.classList.add("hidden");
+      }
+    });
+  }
+
+  if (zoteroConfigForm) {
+    zoteroConfigForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userId = (zoteroUserIdInput ? zoteroUserIdInput.value : "").trim();
+      const apiKey = (zoteroApiKeyInput ? zoteroApiKeyInput.value : "").trim();
+      const collectionKey = (zoteroCollectionInput ? zoteroCollectionInput.value : "").trim();
+
+      if (!userId || !apiKey) {
+        showZoteroModalStatus("Por favor ingresa tanto el User ID como la API Key.", "error");
+        return;
+      }
+
+      showZoteroModalStatus("Verificando credenciales con Zotero...", "loading");
+      if (zoteroSaveBtn) zoteroSaveBtn.disabled = true;
+
+      try {
+        const testRes = await fetch(`https://api.zotero.org/users/${userId}/items?limit=1`, {
+          headers: {
+            "Zotero-API-Key": apiKey,
+            "Zotero-API-Version": "3"
+          }
+        });
+
+        if (!testRes.ok) {
+          if (testRes.status === 403 || testRes.status === 401) {
+            throw new Error("Clave API no autorizada o sin permisos suficientes.");
+          }
+          if (testRes.status === 404) {
+            throw new Error("User ID no encontrado en los registros de Zotero.");
+          }
+          throw new Error(`Error de conexión con Zotero (${testRes.status} ${testRes.statusText})`);
+        }
+
+        // Save valid config to localStorage
+        localStorage.setItem("zotero_user_id", userId);
+        localStorage.setItem("zotero_api_key", apiKey);
+        localStorage.setItem("zotero_collection_key", collectionKey);
+
+        showZoteroModalStatus("¡Conexión verificada y credenciales guardadas con éxito!", "success");
+        updateZoteroHeaderUI();
+        showToast("¡Zotero configurado correctamente! 🎉");
+
+        setTimeout(() => {
+          closeZoteroModal();
+          if (zoteroSaveBtn) zoteroSaveBtn.disabled = false;
+        }, 1000);
+      } catch (err) {
+        console.error("Zotero verification error:", err);
+        showZoteroModalStatus(err.message || "Error al verificar conexión con Zotero.", "error");
+        if (zoteroSaveBtn) zoteroSaveBtn.disabled = false;
+      }
+    });
+  }
+
+  if (zoteroDisconnectBtn) {
+    zoteroDisconnectBtn.addEventListener("click", () => {
+      localStorage.removeItem("zotero_user_id");
+      localStorage.removeItem("zotero_api_key");
+      localStorage.removeItem("zotero_collection_key");
+
+      if (zoteroUserIdInput) zoteroUserIdInput.value = "";
+      if (zoteroApiKeyInput) zoteroApiKeyInput.value = "";
+      if (zoteroCollectionInput) zoteroCollectionInput.value = "";
+
+      updateZoteroHeaderUI();
+      showZoteroModalStatus("Credenciales eliminadas de este navegador.", "info");
+      zoteroDisconnectBtn.classList.add("hidden");
+      showToast("Conexión con Zotero desvinculada.");
+    });
+  }
+
+  // Close modal when clicking backdrop outside dialog box
+  if (zoteroModal) {
+    zoteroModal.addEventListener("click", (e) => {
+      if (e.target === zoteroModal) {
+        closeZoteroModal();
+      }
+    });
+  }
+
+  // Delegated Event Listener for "Guardar en Zotero" Buttons on cards and rows
+  if (articlesContainer) {
+    articlesContainer.addEventListener("click", (e) => {
+      const zoteroBtn = e.target.closest("[data-zotero-index]");
+      if (zoteroBtn) {
+        e.preventDefault();
+        const idx = Number(zoteroBtn.getAttribute("data-zotero-index"));
+        const article = currentlyRenderedArticles[idx];
+        if (article) {
+          saveArticleToZotero(article, zoteroBtn);
+        }
+      }
+    });
+  }
+
+  // Global Keyboard Shortcuts (/ to search, Escape to blur/close)
   document.addEventListener("keydown", (e) => {
     if (e.key === "/" && document.activeElement !== searchInput && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
       e.preventDefault();
@@ -697,8 +1135,11 @@ function setupEventListeners() {
         searchInput.focus();
         searchInput.select();
       }
-    } else if (e.key === "Escape" && document.activeElement === searchInput) {
-      searchInput.blur();
+    } else if (e.key === "Escape") {
+      if (document.activeElement === searchInput) {
+        searchInput.blur();
+      }
+      closeZoteroModal();
     }
   });
 }
@@ -706,9 +1147,11 @@ function setupEventListeners() {
 // Initialize on Load
 document.addEventListener("DOMContentLoaded", () => {
   updateThemeUI();
+  updateZoteroHeaderUI();
   populateFeedUrls();
   setupCopyButtons();
   setupEventListeners();
   loadData();
 });
+
 

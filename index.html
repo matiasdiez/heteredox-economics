@@ -45,6 +45,15 @@
           <span class="text-base-content/80">Última edición: <strong id="latest-issue-badge" class="text-base-content font-bold">#---</strong></span>
         </div>
 
+        <!-- Zotero Settings Button -->
+        <button id="zotero-modal-trigger" class="btn btn-sm gap-1.5 bg-base-200/90 hover:bg-base-200 border border-base-300 rounded-xl text-xs font-bold text-base-content" title="Configurar conexión con tu biblioteca de Zotero">
+          <svg class="w-3.5 h-3.5 text-red-600 fill-current shrink-0" viewBox="0 0 24 24">
+            <path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/>
+          </svg>
+          <span class="hidden sm:inline">Zotero</span>
+          <span id="zotero-header-status-dot" class="w-2 h-2 rounded-full bg-base-content/30 inline-block" title="Estado de conexión Zotero"></span>
+        </button>
+
         <!-- Theme Toggle (Sun / Moon) -->
         <button id="theme-toggle" class="btn btn-ghost btn-circle btn-sm bg-base-200/80 hover:bg-base-200 border border-base-300" title="Cambiar tema (Claro / Oscuro)">
           <!-- Sun Icon (shown when dark) -->
@@ -414,6 +423,145 @@
       </p>
     </div>
   </footer>
+
+  <!-- Zotero Configuration Modal -->
+  <dialog id="zotero-modal">
+    <div class="zotero-modal-content">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-base-300">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-red-100 dark:bg-red-950/50 text-red-600 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-lg text-base-content leading-tight">Configuración de Zotero</h3>
+            <p class="text-xs text-base-content/75 font-medium">Guarda artículos en tu biblioteca con 1 clic</p>
+          </div>
+        </div>
+        <button id="zotero-modal-close-btn" class="btn btn-ghost btn-circle btn-sm" title="Cerrar ventana">✕</button>
+      </div>
+
+      <!-- Quick Instructions Box -->
+      <div class="mt-4 p-4 rounded-2xl bg-base-200/80 border border-base-300 text-xs space-y-2 leading-relaxed">
+        <div class="flex items-start gap-2 font-semibold text-base-content">
+          <svg class="w-4 h-4 text-primary shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>¿Cómo obtener tus credenciales en 30 segundos?</span>
+        </div>
+        <ol class="list-decimal list-inside space-y-1 text-base-content/85 font-medium pl-1">
+          <li>Abre <a href="https://www.zotero.org/settings/keys" target="_blank" rel="noopener noreferrer" class="text-primary font-bold underline">zotero.org/settings/keys</a> en tu navegador.</li>
+          <li>Copia tu <strong>User ID</strong> numérico (arriba de la página).</li>
+          <li>Haz clic en <em>"Create new private key"</em>, dale acceso de <strong>lectura/escritura</strong> y copia la clave generada.</li>
+        </ol>
+      </div>
+
+      <!-- Form Inputs -->
+      <form id="zotero-config-form" class="mt-4 space-y-4">
+        
+        <!-- User ID Input -->
+        <div>
+          <label for="zotero-user-id-input" class="block text-xs font-bold text-base-content mb-1">
+            Zotero User ID <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="zotero-user-id-input" 
+            placeholder="Ej: 8492019" 
+            class="input input-bordered w-full text-sm bg-base-200/50 focus:bg-base-100 border-base-300 rounded-xl font-mono text-base-content" 
+            required 
+          />
+          <p class="text-[11px] text-base-content/60 mt-1">Identificador numérico de tu cuenta personal en Zotero.</p>
+        </div>
+
+        <!-- API Key Input -->
+        <div>
+          <label for="zotero-api-key-input" class="block text-xs font-bold text-base-content mb-1">
+            Zotero API Key <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="zotero-api-key-input" 
+              placeholder="Ej: 2YxN8aBc..." 
+              class="input input-bordered w-full text-sm bg-base-200/50 focus:bg-base-100 border-base-300 rounded-xl font-mono text-base-content pr-10" 
+              required 
+            />
+            <button 
+              type="button" 
+              id="zotero-toggle-key-visibility" 
+              class="btn btn-ghost btn-xs btn-circle absolute right-2 top-2 text-base-content/60 hover:text-base-content" 
+              title="Mostrar / ocultar API key"
+            >
+              <svg id="eye-icon-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg id="eye-icon-closed" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
+          <p class="text-[11px] text-base-content/60 mt-1">Clave de acceso privada con permiso de escritura ("Allow write access").</p>
+        </div>
+
+        <!-- Optional Collection Key Input -->
+        <div>
+          <label for="zotero-collection-input" class="block text-xs font-bold text-base-content mb-1">
+            Colección / Carpeta (Opcional)
+          </label>
+          <input 
+            type="text" 
+            id="zotero-collection-input" 
+            placeholder="Clave de colección (ej: 8J2K9LM) o en blanco para la raíz" 
+            class="input input-bordered w-full text-sm bg-base-200/50 focus:bg-base-100 border-base-300 rounded-xl font-mono text-base-content" 
+          />
+          <p class="text-[11px] text-base-content/60 mt-1">Si lo dejas en blanco, se guardará directamente en "Mi biblioteca" (My Library).</p>
+        </div>
+
+        <!-- Status Message Banner -->
+        <div id="zotero-status-box" class="hidden p-3 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <span id="zotero-status-icon"></span>
+          <span id="zotero-status-text"></span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="modal-action flex items-center justify-between pt-2 border-t border-base-300">
+          <button 
+            type="button" 
+            id="zotero-disconnect-btn" 
+            class="btn btn-ghost btn-sm text-error hover:bg-error/10 font-bold rounded-xl hidden"
+          >
+            Desconectar
+          </button>
+          
+          <div class="flex items-center gap-2 ml-auto">
+            <button 
+              type="button" 
+              id="zotero-cancel-btn" 
+              class="btn btn-ghost btn-sm font-bold rounded-xl"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              id="zotero-save-btn" 
+              class="btn btn-primary btn-sm font-bold rounded-xl gap-1.5 shadow-xs"
+            >
+              <svg class="w-4 h-4 fill-current text-white shrink-0" viewBox="0 0 24 24">
+                <path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/>
+              </svg>
+              <span>Verificar y Guardar</span>
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </dialog>
 
   <script type="module" src="/src/main.js"></script>
 </body>
