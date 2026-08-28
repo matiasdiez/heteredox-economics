@@ -330,6 +330,52 @@ def generate_articles_rss(issues: list[dict], output_path: str, max_items: int =
     tree.write(output_path, encoding="utf-8", xml_declaration=True)
     print(f"Generated Articles RSS Feed: {output_path} ({len(flat_articles)} items)")
 
+def generate_category_rss(issues: list[dict], category_match: str, title: str, description: str, output_path: str, max_items: int = 80):
+    """Generate RSS 2.0 feed filtered by a specific category (e.g. Journals, Call for Papers)."""
+    rss = ET.Element("rss", version="2.0", attrib={"xmlns:atom": "http://www.w3.org/2005/Atom"})
+    channel = ET.SubElement(rss, "channel")
+    
+    ET.SubElement(channel, "title").text = title
+    ET.SubElement(channel, "link").text = "https://www.heterodoxnews.com/n/"
+    ET.SubElement(channel, "description").text = description
+    ET.SubElement(channel, "language").text = "en"
+    ET.SubElement(channel, "lastBuildDate").text = format_datetime(datetime.now(timezone.utc))
+    
+    matching_articles = []
+    for issue in issues:
+        for cat in issue["categories"]:
+            if category_match.lower() in cat["name"].lower():
+                for art in cat["articles"]:
+                    matching_articles.append(art)
+                    
+    matching_articles = matching_articles[:max_items]
+    
+    for art in matching_articles:
+        item = ET.SubElement(channel, "item")
+        ET.SubElement(item, "title").text = art["title"]
+        ET.SubElement(item, "link").text = art["link"]
+        
+        guid = ET.SubElement(item, "guid", isPermaLink="true")
+        guid.text = art["link"]
+        
+        ET.SubElement(item, "category").text = art["category"]
+        
+        art_dt = parse_date(art.get("issue_date", ""))
+        ET.SubElement(item, "pubDate").text = format_datetime(art_dt)
+        
+        desc = art["body_html"] or f"<p>{art['body_text']}</p>"
+        if art.get("deadline"):
+            desc = f"<p><strong>Deadline:</strong> {art['deadline']}</p>" + desc
+        desc += f'<p><br/><small>From Issue #{art["issue_num"]} ({art["issue_date"]}) | <a href="{art["link"]}">Read in Newsletter</a></small></p>'
+        
+        ET.SubElement(item, "description").text = desc
+
+    tree = ET.ElementTree(rss)
+    ET.indent(tree, space="  ")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    tree.write(output_path, encoding="utf-8", xml_declaration=True)
+    print(f"Generated Category RSS Feed ({category_match}): {output_path} ({len(matching_articles)} items)")
+
 def generate_json_dataset(issues: list[dict], output_path: str):
     """Generate structured JSON dataset powering the interactive web frontend."""
     all_categories = {}
@@ -400,10 +446,46 @@ def main():
     public_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
     feed_xml_path = os.path.join(public_dir, "feed.xml")
     articles_xml_path = os.path.join(public_dir, "articles.xml")
+    journals_xml_path = os.path.join(public_dir, "journals.xml")
+    cfp_xml_path = os.path.join(public_dir, "cfp.xml")
+    jobs_xml_path = os.path.join(public_dir, "jobs.xml")
+    books_xml_path = os.path.join(public_dir, "books.xml")
     data_json_path = os.path.join(public_dir, "data.json")
     
+    # General Feeds
     generate_issues_rss(parsed_issues, feed_xml_path)
     generate_articles_rss(parsed_issues, articles_xml_path)
+    
+    # Filtered Category Feeds
+    generate_category_rss(
+        parsed_issues,
+        "Journals",
+        "Heterodox Economics - Journals & Special Issues",
+        "Academic journal issues, special calls, and tables of contents from Heterodox Economics Newsletter.",
+        journals_xml_path
+    )
+    generate_category_rss(
+        parsed_issues,
+        "Call for Papers",
+        "Heterodox Economics - Call for Papers",
+        "Conferences, workshops, and journal calls for papers from Heterodox Economics Newsletter.",
+        cfp_xml_path
+    )
+    generate_category_rss(
+        parsed_issues,
+        "Job Postings",
+        "Heterodox Economics - Academic Jobs",
+        "Academic job vacancies, postdocs, and professorships in heterodox economics.",
+        jobs_xml_path
+    )
+    generate_category_rss(
+        parsed_issues,
+        "Books",
+        "Heterodox Economics - Books & Book Series",
+        "New book releases, monographs, and companion series in heterodox economics.",
+        books_xml_path
+    )
+
     generate_json_dataset(parsed_issues, data_json_path)
     print("=== Scraper Finished Successfully! ===")
 

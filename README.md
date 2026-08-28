@@ -9,11 +9,13 @@ Diseñado con **FlyonUI** + **Tailwind CSS**, empaquetado con **Vite** y automat
 ## 🚀 Características Principales
 
 - **Detección y extracción automática de nuevos números**: El scraper (`scripts/scraper.py`) consulta el archivo de HeterodoxNews y sondea nuevos números (`htn363.html`, `htn364.html`, etc.) de forma continua.
-- **Doble Feed RSS 2.0**:
-  - `feed.xml`: **Feed por Edición Completa** — Cada entrada del RSS es una entrega del newsletter con su nota editorial íntegra y tabla de contenidos con enlaces.
-  - `articles.xml`: **Feed Granular por Convocatoria** — Cada entrada es un anuncio individual (*Call for Papers*, *Journals*, *Books*, *Job Postings*, *Awards*, etc.) con su fecha límite y ancla directa (`#art-...`).
+- **Múltiples Feeds RSS 2.0 listos para usar**:
+  - `feed.xml`: **Feed por Edición Completa** — Cada entrada es una entrega del newsletter con su nota editorial íntegra y tabla de contenidos con enlaces.
+  - `journals.xml`: **Feed Exclusivo de Journals y Revistas** — Solo nuevas publicaciones, sumarios y números especiales de revistas heterodoxas.
+  - `articles.xml`: **Feed Granular General** — Cada entrada es un anuncio individual (*Call for Papers*, *Journals*, *Books*, *Job Postings*, *Awards*, etc.) con su fecha límite y ancla directa (`#art-...`).
+  - `cfp.xml`, `jobs.xml`, `books.xml`: Feeds directos filtrados por categoría.
 - **Portal Web con FlyonUI**:
-  - Copia con 1 clic de las URLs del feed con confirmación visual.
+  - Copia con 1 clic de las URLs de cada feed con confirmación visual.
   - Buscador en tiempo real por palabras clave, autores, universidades y temas.
   - Filtro interactivo por categorías y selector de números anteriores.
   - Lector integrado del editorial de la última edición.
@@ -27,9 +29,14 @@ Diseñado con **FlyonUI** + **Tailwind CSS**, empaquetado con **Vite** y automat
 
 Una vez desplegado en GitHub Pages, los feeds estarán disponibles en:
 
-- **Feed por Edición**: `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/feed.xml`
-- **Feed por Convocatorias**: `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/articles.xml`
-- **Dataset JSON para desarrolladores**: `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/data.json`
+- 📖 **Feed Solo Journals**: `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/journals.xml`
+- 📰 **Feed por Edición Completa**: `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/feed.xml`
+- 📣 **Feed Todas las Convocatorias**: `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/articles.xml`
+- 🎯 **Feeds temáticos directos**:
+  - `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/cfp.xml` (Call for Papers)
+  - `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/jobs.xml` (Ofertas de Empleo)
+  - `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/books.xml` (Libros)
+- 💾 **Dataset JSON para desarrolladores**: `https://<TU-USUARIO>.github.io/<NOMBRE-REPOSITORIO>/data.json`
 
 ---
 

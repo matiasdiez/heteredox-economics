@@ -35,12 +35,15 @@ function setupCopyButtons() {
 
   const issuesUrl = getAbsoluteFeedUrl("feed.xml");
   const articlesUrl = getAbsoluteFeedUrl("articles.xml");
+  const journalsUrl = getAbsoluteFeedUrl("journals.xml");
 
   const issuesInput = document.getElementById("feed-issues-url");
   const articlesInput = document.getElementById("feed-articles-url");
+  const journalsInput = document.getElementById("feed-journals-url");
 
   if (issuesInput) issuesInput.value = issuesUrl;
   if (articlesInput) articlesInput.value = articlesUrl;
+  if (journalsInput) journalsInput.value = journalsUrl;
 
   document.querySelectorAll("[data-copy-target]").forEach((btn) => {
     btn.addEventListener("click", () => {
