@@ -211,6 +211,14 @@ function getPrimaryArticleLink(art) {
   return art.link || art.newsletter_link || "#";
 }
 
+// Helper to validate URL is a direct article link and not a shared newsletter aggregator link
+function isValidZoteroUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  const clean = url.toLowerCase().trim();
+  if (!clean || clean === "#" || clean.includes("heterodoxnews.com")) return false;
+  return true;
+}
+
 // Key Normalization for Accurate Library Matching
 function normalizeZoteroKey(str) {
   if (!str || typeof str !== "string") return "";
@@ -224,23 +232,27 @@ function normalizeZoteroKey(str) {
 
 function normalizeTitle(str) {
   if (!str || typeof str !== "string") return "";
-  return str
+  const clean = str
     .toLowerCase()
     .trim()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Remove accents
     .replace(/[^\w\s]/gi, "")
-    .replace(/\s+/g, " ");
+    .replace(/\s+/g, " ")
+    .trim();
+  return clean.length >= 4 ? clean : "";
 }
 
-// Cache Management for Saved Items
+// Cache Management for Saved Items (Per individual article / book)
 function loadSavedZoteroCache() {
   try {
-    const raw = localStorage.getItem("zotero_saved_articles_cache");
+    // Clear legacy cache with shared newsletter anchors if present
+    localStorage.removeItem("zotero_saved_articles_cache");
+    const raw = localStorage.getItem("zotero_saved_articles_cache_v2");
     if (raw) {
       const parsed = JSON.parse(raw);
-      savedZoteroCache.urls = new Set((parsed.urls || []).map(normalizeZoteroKey));
-      savedZoteroCache.titles = new Set((parsed.titles || []).map(normalizeTitle));
+      savedZoteroCache.urls = new Set((parsed.urls || []).filter(isValidZoteroUrl).map(normalizeZoteroKey));
+      savedZoteroCache.titles = new Set((parsed.titles || []).map(normalizeTitle).filter(Boolean));
       savedZoteroCache.lastSync = parsed.lastSync || 0;
     }
   } catch (e) {
@@ -251,32 +263,50 @@ function loadSavedZoteroCache() {
 function persistSavedZoteroCache() {
   try {
     const data = {
-      urls: Array.from(savedZoteroCache.urls),
-      titles: Array.from(savedZoteroCache.titles),
+      urls: Array.from(savedZoteroCache.urls).filter(isValidZoteroUrl),
+      titles: Array.from(savedZoteroCache.titles).filter(Boolean),
       lastSync: savedZoteroCache.lastSync
     };
-    localStorage.setItem("zotero_saved_articles_cache", JSON.stringify(data));
+    localStorage.setItem("zotero_saved_articles_cache_v2", JSON.stringify(data));
   } catch (e) {
     console.error("Error persisting Zotero cache:", e);
   }
 }
 
 function markArticleAsSaved(art) {
+  if (!art) return;
   const primaryLink = getPrimaryArticleLink(art);
-  if (primaryLink) savedZoteroCache.urls.add(normalizeZoteroKey(primaryLink));
-  if (art.link) savedZoteroCache.urls.add(normalizeZoteroKey(art.link));
-  if (art.newsletter_link) savedZoteroCache.urls.add(normalizeZoteroKey(art.newsletter_link));
-  if (art.title) savedZoteroCache.titles.add(normalizeTitle(art.title));
+  if (isValidZoteroUrl(primaryLink)) {
+    savedZoteroCache.urls.add(normalizeZoteroKey(primaryLink));
+  }
+  if (isValidZoteroUrl(art.link)) {
+    savedZoteroCache.urls.add(normalizeZoteroKey(art.link));
+  }
+  const normTitle = normalizeTitle(art.title);
+  if (normTitle) {
+    savedZoteroCache.titles.add(normTitle);
+  }
   persistSavedZoteroCache();
 }
 
 function isArticleSavedInZotero(art) {
   if (!art) return false;
+  
+  // 1. Check direct unique article / book link
   const primaryLink = getPrimaryArticleLink(art);
-  if (primaryLink && savedZoteroCache.urls.has(normalizeZoteroKey(primaryLink))) return true;
-  if (art.link && savedZoteroCache.urls.has(normalizeZoteroKey(art.link))) return true;
-  if (art.newsletter_link && savedZoteroCache.urls.has(normalizeZoteroKey(art.newsletter_link))) return true;
-  if (art.title && savedZoteroCache.titles.has(normalizeTitle(art.title))) return true;
+  if (isValidZoteroUrl(primaryLink) && savedZoteroCache.urls.has(normalizeZoteroKey(primaryLink))) {
+    return true;
+  }
+  if (isValidZoteroUrl(art.link) && savedZoteroCache.urls.has(normalizeZoteroKey(art.link))) {
+    return true;
+  }
+
+  // 2. Check individual article title (exact normalized title)
+  const normTitle = normalizeTitle(art.title);
+  if (normTitle && savedZoteroCache.titles.has(normTitle)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -487,20 +517,18 @@ async function syncZoteroLibrary(showFeedback = false) {
 
     if (res.ok) {
       const items = await res.json();
+      savedZoteroCache.urls.clear();
+      savedZoteroCache.titles.clear();
+
       items.forEach((item) => {
         const data = item.data;
         if (!data) return;
-        if (data.url) {
+        if (isValidZoteroUrl(data.url)) {
           savedZoteroCache.urls.add(normalizeZoteroKey(data.url));
         }
-        if (data.title) {
-          savedZoteroCache.titles.add(normalizeTitle(data.title));
-        }
-        if (data.extra) {
-          const urlMatches = data.extra.match(/https?:\/\/[^\s\n\r"']+/g);
-          if (urlMatches) {
-            urlMatches.forEach((u) => savedZoteroCache.urls.add(normalizeZoteroKey(u)));
-          }
+        const normTitle = normalizeTitle(data.title);
+        if (normTitle) {
+          savedZoteroCache.titles.add(normTitle);
         }
       });
 
