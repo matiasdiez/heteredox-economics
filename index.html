@@ -70,33 +70,31 @@
           Suscríbete en tu lector de noticias favorito para recibir todas las convocatorias académicas (<em>Call for Papers</em>), nuevos números de revistas, libros y ofertas laborales.
         </p>
 
-        <!-- Subscription Cards (3 Core Options) -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-6xl mx-auto">
+        <!-- Subscription Cards -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 text-left max-w-4xl mx-auto">
           
           <!-- Feed 1: Edición Completa -->
-          <div class="card card-bordered bg-base-100 shadow-md hover:border-primary/50 transition-all flex flex-col justify-between">
-            <div class="card-body p-5">
+          <div class="card card-bordered bg-base-100 shadow-md hover:border-primary/50 transition-all">
+            <div class="card-body p-6">
               <div class="flex items-center gap-3 mb-2">
-                <div class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
                   </svg>
                 </div>
                 <div>
-                  <h3 class="font-bold text-base leading-tight">Por Edición Completa</h3>
+                  <h3 class="font-bold text-lg leading-snug">Por Edición Completa</h3>
                   <p class="text-xs text-base-content/60">1 entrada por newsletter</p>
                 </div>
               </div>
-              <p class="text-xs text-base-content/70 mt-1 leading-relaxed">
-                Incluye el editorial completo y la tabla de contenidos general con todos los enlaces.
+              <p class="text-sm text-base-content/70 mt-2">
+                Ideal si prefieres leer el editorial completo y la tabla de contenidos agrupada en cada entrega quincenal.
               </p>
-            </div>
 
-            <div class="p-5 pt-0">
-              <div class="flex items-center gap-2">
+              <div class="mt-4 flex items-center gap-2">
                 <input id="feed-issues-url" type="text" readonly class="input input-sm input-bordered w-full font-mono text-xs bg-base-200" value="feed.xml" />
                 <button data-copy-target="feed-issues-url" class="btn btn-primary btn-sm shrink-0 gap-1" title="Copiar URL">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
                   </svg>
                   <span>Copiar</span>
@@ -142,30 +140,28 @@
             </div>
           </div>
 
-          <!-- Feed 3: Todas las Convocatorias y Artículos -->
-          <div class="card card-bordered bg-base-100 shadow-md hover:border-neutral/50 transition-all flex flex-col justify-between">
-            <div class="card-body p-5">
+          <!-- Feed 2: Granular por Artículo -->
+          <div class="card card-bordered bg-base-100 shadow-md hover:border-secondary/50 transition-all">
+            <div class="card-body p-6">
               <div class="flex items-center gap-3 mb-2">
-                <div class="w-9 h-9 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                   </svg>
                 </div>
                 <div>
-                  <h3 class="font-bold text-base leading-tight">Todos los Artículos y CFPs</h3>
-                  <p class="text-xs text-base-content/60">Entradas individuales</p>
+                  <h3 class="font-bold text-lg leading-snug">Feed por Convocatoria / Artículo</h3>
+                  <p class="text-xs text-base-content/60">Entradas individuales por cada CFP, revista o libro</p>
                 </div>
               </div>
-              <p class="text-xs text-base-content/70 mt-1 leading-relaxed">
-                Feed granular con cada CFP, empleo, libro, beca y evento anunciado individualmente.
+              <p class="text-sm text-base-content/70 mt-2">
+                Recomendado para filtrar por categorías, recibir alertas individuales y seguir fechas límite directamente.
               </p>
-            </div>
 
-            <div class="p-5 pt-0">
-              <div class="flex items-center gap-2">
+              <div class="mt-4 flex items-center gap-2">
                 <input id="feed-articles-url" type="text" readonly class="input input-sm input-bordered w-full font-mono text-xs bg-base-200" value="articles.xml" />
-                <button data-copy-target="feed-articles-url" class="btn btn-accent btn-sm shrink-0 gap-1 text-white" title="Copiar URL">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button data-copy-target="feed-articles-url" class="btn btn-secondary btn-sm shrink-0 gap-1" title="Copiar URL">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
                   </svg>
                   <span>Copiar</span>

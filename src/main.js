@@ -221,13 +221,23 @@ function renderArticles() {
   // Filter by Search
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim();
-    filtered = filtered.filter(
-      (art) =>
+    filtered = filtered.filter((art) => {
+      const basicMatch =
         art.title.toLowerCase().includes(q) ||
         art.body_text.toLowerCase().includes(q) ||
         (art.deadline && art.deadline.toLowerCase().includes(q)) ||
-        art.category.toLowerCase().includes(q)
-    );
+        art.category.toLowerCase().includes(q);
+
+      const paperMatch =
+        art.papers &&
+        art.papers.some(
+          (p) =>
+            p.title.toLowerCase().includes(q) ||
+            (p.author && p.author.toLowerCase().includes(q))
+        );
+
+      return basicMatch || paperMatch;
+    });
   }
 
   if (resultsCountEl) {
@@ -275,8 +285,36 @@ function renderArticles() {
         </div>`
         : "";
 
+      const papersListHtml =
+        art.papers && art.papers.length > 0
+          ? `<div class="mt-3 pt-3 border-t border-base-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-base-content/75 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                  Artículos incluidos (${art.papers.length})
+                </span>
+              </div>
+              <ul class="space-y-2 text-xs divide-y divide-base-200/60 max-h-56 overflow-y-auto pr-1">
+                ${art.papers
+                  .map(
+                    (p) => `
+                  <li class="pt-1.5 first:pt-0">
+                    <a href="${p.link}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline font-semibold leading-tight flex items-start gap-1">
+                      <span>${p.title}</span>
+                      <svg class="w-3 h-3 shrink-0 mt-0.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    ${p.author ? `<span class="text-base-content/60 block text-[11px] mt-0.5">${p.author}</span>` : ""}
+                  </li>`
+                  )
+                  .join("")}
+              </ul>
+            </div>`
+          : "";
+
       const extLinksHtml =
-        art.external_links && art.external_links.length > 0
+        (!art.papers || art.papers.length === 0) &&
+        art.external_links &&
+        art.external_links.length > 0
           ? `<div class="mt-4 pt-3 border-t border-base-200 flex flex-wrap gap-2">
               <span class="text-xs text-base-content/60 self-center">Enlaces:</span>
               ${art.external_links
@@ -307,10 +345,13 @@ function renderArticles() {
 
             ${deadlineHtml}
 
-            <p class="text-sm text-base-content/80 mt-3 line-clamp-3 leading-relaxed">
-              ${art.body_text}
-            </p>
+            ${
+              !art.papers || art.papers.length === 0
+                ? `<p class="text-sm text-base-content/80 mt-3 line-clamp-3 leading-relaxed">${art.body_text}</p>`
+                : ""
+            }
 
+            ${papersListHtml}
             ${extLinksHtml}
           </div>
 
