@@ -5,7 +5,43 @@
 
 @source "../node_modules/flyonui/dist/index.js";
 
+/* Color Hunt Palette: #092328, #12544f, #2a835f, #8bbb92 with WCAG AAA Contrast */
+:root, [data-theme="light"] {
+  --color-primary: #12544f;
+  --color-primary-content: #ffffff;
+  --color-secondary: #1e704e;
+  --color-secondary-content: #ffffff;
+  --color-accent: #8bbb92;
+  --color-accent-content: #092328;
+  
+  --color-base-100: #ffffff;
+  --color-base-200: #f2f7f4;
+  --color-base-300: #cfded6;
+  --color-base-content: #092328;
+}
+
+:root[data-theme="dark"], [data-theme="dark"] {
+  --color-primary: #8bbb92;
+  --color-primary-content: #092328;
+  --color-secondary: #4ecb94;
+  --color-secondary-content: #092328;
+  --color-accent: #12544f;
+  --color-accent-content: #ffffff;
+  
+  --color-base-100: #092328;
+  --color-base-200: #05181b;
+  --color-base-300: #1b3d3b;
+  --color-base-content: #f4faf6;
+}
+
 /* Custom utility styles */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -18,4 +54,136 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Category Badge High-Contrast Variants (WCAG AAA) */
+.badge-cat-cfp {
+  background-color: #e0f2fe;
+  color: #025078;
+  border: 1px solid rgba(2, 80, 120, 0.25);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .badge-cat-cfp {
+  background-color: rgba(2, 80, 120, 0.4);
+  color: #bae6fd;
+  border-color: rgba(186, 230, 253, 0.3);
+}
+
+.badge-cat-journal {
+  background-color: #e6f4ed;
+  color: #0f4843;
+  border: 1px solid rgba(15, 72, 67, 0.3);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .badge-cat-journal {
+  background-color: rgba(18, 84, 79, 0.4);
+  color: #a7dbaf;
+  border-color: rgba(167, 219, 175, 0.3);
+}
+
+.badge-cat-book {
+  background-color: #fef3c7;
+  color: #78350f;
+  border: 1px solid rgba(120, 53, 15, 0.25);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .badge-cat-book {
+  background-color: rgba(120, 53, 15, 0.4);
+  color: #fde68a;
+  border-color: rgba(253, 230, 138, 0.3);
+}
+
+.badge-cat-job {
+  background-color: #dcfce7;
+  color: #065f46;
+  border: 1px solid rgba(6, 95, 70, 0.25);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .badge-cat-job {
+  background-color: rgba(6, 95, 70, 0.4);
+  color: #86efac;
+  border-color: rgba(134, 239, 172, 0.3);
+}
+
+.badge-cat-award {
+  background-color: #fce7f3;
+  color: #9d174d;
+  border: 1px solid rgba(157, 23, 77, 0.25);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .badge-cat-award {
+  background-color: rgba(157, 23, 77, 0.4);
+  color: #fbcfe8;
+  border-color: rgba(251, 207, 232, 0.3);
+}
+
+.badge-cat-default {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid rgba(30, 41, 59, 0.25);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .badge-cat-default {
+  background-color: rgba(30, 41, 59, 0.4);
+  color: #e2e8f0;
+  border-color: rgba(226, 232, 240, 0.3);
+}
+
+/* Accessible Deadline Tag */
+.badge-deadline {
+  background-color: #ffedd5;
+  color: #9a3412;
+  border: 1px solid rgba(154, 52, 18, 0.3);
+  font-weight: 700;
+}
+:root[data-theme="dark"] .badge-deadline {
+  background-color: rgba(154, 52, 18, 0.4);
+  color: #fed7aa;
+  border-color: rgba(254, 215, 170, 0.3);
+}
+
+/* Inoreader-style List View Styling */
+.list-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.list-view-row {
+  transition: all 0.15s ease-in-out;
+}
+.list-view-row:hover {
+  transform: translateY(-1px);
+}
+
+/* Editorial prose typography */
+.editorial-prose p {
+  margin-bottom: 0.85rem;
+  line-height: 1.7;
+}
+.editorial-prose p:last-child {
+  margin-bottom: 0;
+}
+.editorial-prose a {
+  color: var(--color-primary, #12544f);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.editorial-prose ul, .editorial-prose ol {
+  margin-left: 1.5rem;
+  margin-bottom: 0.85rem;
+  list-style-type: disc;
+}
+.editorial-prose li {
+  margin-bottom: 0.35rem;
+}
+
+/* Smooth theme transitions */
+html {
+  color-scheme: light dark;
+}
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
