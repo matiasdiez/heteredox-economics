@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 Heterodox Economics Newsletter RSS & Data Scraper.
-Extracts newsletter issues, articles, categories, journal papers, and editorial notes from heterodoxnews.com.
+Extracts newsletter issues, articles, categories, individual journal papers, and editorial notes.
 Generates:
 - public/feed.xml: RSS 2.0 feed per issue (full newsletter edition)
 - public/journals.xml: RSS 2.0 feed of INDIVIDUAL academic articles/papers published in journals
-- public/articles.xml: RSS 2.0 feed per article/announcement (CFPs, Journals, Books, Jobs, etc.)
+- public/articles.xml: RSS 2.0 feed per individual article/announcement (Papers, CFPs, Books, Jobs)
 - public/cfp.xml, jobs.xml, books.xml: Filtered category RSS feeds
-- public/data.json: JSON dataset powering the web frontend
+- public/data.json: JSON dataset powering the web frontend where EACH paper is an article entry
 """
 
 import os
@@ -50,7 +50,6 @@ def discover_available_issues() -> list[int]:
     """Find all issue numbers from directory listing and sequential probing."""
     issues = set()
     
-    # 1. Scrape the /n/ directory listing
     index_html = get_html(BASE_URL)
     if index_html:
         found = re.findall(r'htn(\d+)\.html', index_html)
@@ -63,7 +62,6 @@ def discover_available_issues() -> list[int]:
     max_known = max(issues)
     print(f"Max issue found in index: {max_known}")
     
-    # 2. Probe sequentially ahead to catch any unlisted latest issue
     consecutive_404s = 0
     test_num = max_known + 1
     while consecutive_404s < 2:
@@ -312,7 +310,7 @@ def generate_issues_rss(issues: list[dict], output_path: str):
     tree.write(output_path, encoding="utf-8", xml_declaration=True)
     print(f"Generated Issues RSS Feed: {output_path} ({len(issues)} issues)")
 
-def generate_journals_rss(issues: list[dict], output_path: str, max_items: int = 200):
+def generate_journals_rss(issues: list[dict], output_path: str, max_items: int = 300):
     """
     Generate RSS 2.0 feed where EACH ITEM is an individual published journal article/paper.
     Lists authors, article title, journal volume/issue, and direct link to the paper.
@@ -337,7 +335,6 @@ def generate_journals_rss(issues: list[dict], output_path: str, max_items: int =
                     if art.get("papers"):
                         all_papers.extend(art["papers"])
                     else:
-                        # Fallback for journal entries without individual papers
                         all_papers.append({
                             "title": art["title"],
                             "author": "",
@@ -355,7 +352,7 @@ def generate_journals_rss(issues: list[dict], output_path: str, max_items: int =
     for paper in all_papers:
         item = ET.SubElement(channel, "item")
         
-        # Clear title: Author: Title [Journal]
+        # Clear title: Author: "Paper Title" [Journal Name]
         if paper.get("author"):
             item_title = f"{paper['author']}: \"{paper['title']}\" [{paper['journal']}]"
         else:
@@ -387,42 +384,60 @@ def generate_journals_rss(issues: list[dict], output_path: str, max_items: int =
     tree.write(output_path, encoding="utf-8", xml_declaration=True)
     print(f"Generated Journals Papers RSS Feed: {output_path} ({len(all_papers)} individual papers)")
 
-def generate_articles_rss(issues: list[dict], output_path: str, max_items: int = 100):
-    """Generate RSS 2.0 feed where each item is an individual article / call / announcement."""
+def generate_articles_rss(issues: list[dict], output_path: str, max_items: int = 150):
+    """Generate RSS 2.0 feed where each item is an individual article / paper / call / announcement."""
     rss = ET.Element("rss", version="2.0", attrib={"xmlns:atom": "http://www.w3.org/2005/Atom"})
     channel = ET.SubElement(rss, "channel")
     
     ET.SubElement(channel, "title").text = "Heterodox Economics - Calls, Journals & News"
     ET.SubElement(channel, "link").text = "https://www.heterodoxnews.com/n/"
     ET.SubElement(channel, "description").text = (
-        "Granular feed of Call for Papers, Journal issues, Book releases, Academic Jobs, "
-        "and Conferences from the Heterodox Economics Newsletter."
+        "Granular feed of academic articles, Call for Papers, Book releases, and Academic Jobs "
+        "from the Heterodox Economics Newsletter."
     )
     ET.SubElement(channel, "language").text = "en"
     ET.SubElement(channel, "lastBuildDate").text = format_datetime(datetime.now(timezone.utc))
     
-    flat_articles = []
+    flat_items = []
     for issue in issues:
         for cat in issue["categories"]:
-            for art in cat["articles"]:
-                flat_articles.append(art)
+            cat_name = cat["name"]
+            if "journal" in cat_name.lower():
+                for art in cat["articles"]:
+                    if art.get("papers"):
+                        for p in art["papers"]:
+                            flat_items.append({
+                                "title": f"[Journals] {p['author'] + ': ' if p.get('author') else ''}{p['title']}",
+                                "link": p["link"],
+                                "category": "Journals",
+                                "issue_date": p["issue_date"],
+                                "issue_num": p["issue_num"],
+                                "body_html": f"<p><strong>Article:</strong> <a href='{p['link']}'>{p['title']}</a></p><p><strong>Author(s):</strong> {p['author']}</p><p><strong>Journal:</strong> {p['journal']}</p>",
+                                "deadline": None
+                            })
+                    else:
+                        flat_items.append(art)
+            else:
+                for art in cat["articles"]:
+                    flat_items.append(art)
                 
-    flat_articles = flat_articles[:max_items]
+    flat_items = flat_items[:max_items]
     
-    for art in flat_articles:
+    for art in flat_items:
         item = ET.SubElement(channel, "item")
-        ET.SubElement(item, "title").text = f"[{art['category']}] {art['title']}"
+        title_text = art["title"] if art["title"].startswith("[") else f"[{art['category']}] {art['title']}"
+        ET.SubElement(item, "title").text = title_text
         ET.SubElement(item, "link").text = art["link"]
         
-        guid = ET.SubElement(item, "guid", isPermaLink="true")
-        guid.text = art["link"]
+        guid = ET.SubElement(item, "guid", isPermaLink="false")
+        guid.text = f"{art['link']}#{art['issue_num']}"
         
         ET.SubElement(item, "category").text = art["category"]
         
         art_dt = parse_date(art.get("issue_date", ""))
         ET.SubElement(item, "pubDate").text = format_datetime(art_dt)
         
-        desc = art["body_html"] or f"<p>{art['body_text']}</p>"
+        desc = art.get("body_html") or f"<p>{art.get('body_text', '')}</p>"
         if art.get("deadline"):
             desc = f"<p><strong>Deadline:</strong> {art['deadline']}</p>" + desc
         desc += f'<p><br/><small>From Issue #{art["issue_num"]} ({art["issue_date"]}) | <a href="{art["link"]}">Read in Newsletter</a></small></p>'
@@ -433,7 +448,7 @@ def generate_articles_rss(issues: list[dict], output_path: str, max_items: int =
     ET.indent(tree, space="  ")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     tree.write(output_path, encoding="utf-8", xml_declaration=True)
-    print(f"Generated Articles RSS Feed: {output_path} ({len(flat_articles)} items)")
+    print(f"Generated Articles RSS Feed: {output_path} ({len(flat_items)} items)")
 
 def generate_category_rss(issues: list[dict], category_match: str, title: str, description: str, output_path: str, max_items: int = 80):
     """Generate RSS 2.0 feed filtered by a specific category (e.g. Call for Papers, Jobs, Books)."""
@@ -482,7 +497,10 @@ def generate_category_rss(issues: list[dict], category_match: str, title: str, d
     print(f"Generated Category RSS Feed ({category_match}): {output_path} ({len(matching_articles)} items)")
 
 def generate_json_dataset(issues: list[dict], output_path: str):
-    """Generate structured JSON dataset powering the interactive web frontend."""
+    """
+    Generate structured JSON dataset powering the interactive web frontend.
+    CRITICAL: For Journals, EACH INDIVIDUAL PAPER IS AN ARTICLE!
+    """
     all_categories = {}
     recent_articles = []
     all_journal_papers = []
@@ -490,23 +508,65 @@ def generate_json_dataset(issues: list[dict], output_path: str):
     for issue in issues:
         for cat in issue["categories"]:
             cat_name = cat["name"]
-            all_categories[cat_name] = all_categories.get(cat_name, 0) + cat["count"]
-            for art in cat["articles"]:
-                recent_articles.append({
-                    "id": art["id"],
-                    "title": art["title"],
-                    "category": art["category"],
-                    "link": art["link"],
-                    "body_text": art["body_text"],
-                    "deadline": art["deadline"],
-                    "issue_num": art["issue_num"],
-                    "issue_date": art["issue_date"],
-                    "iso_date": art["iso_date"],
-                    "papers": art.get("papers", []),
-                    "external_links": art.get("external_links", [])
-                })
-                if art.get("papers"):
-                    all_journal_papers.extend(art["papers"])
+            
+            if "journal" in cat_name.lower():
+                # Every paper is an individual article in recent_articles!
+                for art in cat["articles"]:
+                    if art.get("papers"):
+                        for p in art["papers"]:
+                            paper_entry = {
+                                "id": f"{art['id']}-{len(recent_articles)}",
+                                "title": p["title"],
+                                "author": p.get("author", ""),
+                                "journal": p.get("journal", art["title"]),
+                                "category": "Journals",
+                                "link": p["link"],
+                                "body_text": f"Publicado en {p.get('journal', art['title'])}. Autor(es): {p.get('author', 'No especificado')}.",
+                                "deadline": None,
+                                "issue_num": p["issue_num"],
+                                "issue_date": p["issue_date"],
+                                "iso_date": p["iso_date"],
+                                "newsletter_link": p.get("newsletter_link", art["link"]),
+                                "external_links": [{"text": "Abrir Artículo", "url": p["link"]}]
+                            }
+                            recent_articles.append(paper_entry)
+                            all_journal_papers.append(p)
+                            all_categories["Journals"] = all_categories.get("Journals", 0) + 1
+                    else:
+                        recent_articles.append({
+                            "id": art["id"],
+                            "title": art["title"],
+                            "author": "",
+                            "journal": art["title"],
+                            "category": "Journals",
+                            "link": art["link"],
+                            "body_text": art["body_text"],
+                            "deadline": art["deadline"],
+                            "issue_num": art["issue_num"],
+                            "issue_date": art["issue_date"],
+                            "iso_date": art["iso_date"],
+                            "newsletter_link": art["link"],
+                            "external_links": art.get("external_links", [])
+                        })
+                        all_categories["Journals"] = all_categories.get("Journals", 0) + 1
+            else:
+                all_categories[cat_name] = all_categories.get(cat_name, 0) + cat["count"]
+                for art in cat["articles"]:
+                    recent_articles.append({
+                        "id": art["id"],
+                        "title": art["title"],
+                        "author": "",
+                        "journal": "",
+                        "category": art["category"],
+                        "link": art["link"],
+                        "body_text": art["body_text"],
+                        "deadline": art["deadline"],
+                        "issue_num": art["issue_num"],
+                        "issue_date": art["issue_date"],
+                        "iso_date": art["iso_date"],
+                        "newsletter_link": art["link"],
+                        "external_links": art.get("external_links", [])
+                    })
 
     dataset = {
         "metadata": {
@@ -530,7 +590,7 @@ def generate_json_dataset(issues: list[dict], output_path: str):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(dataset, f, indent=2, ensure_ascii=False)
-    print(f"Generated JSON dataset: {output_path}")
+    print(f"Generated JSON dataset: {output_path} ({len(recent_articles)} total articles)")
 
 def main():
     print("=== Starting Heterodox Economics Newsletter Scraper ===")
@@ -567,7 +627,7 @@ def main():
     generate_articles_rss(parsed_issues, articles_xml_path)
     
     # Dedicated Journals Papers RSS Feed (Every paper is an RSS item)
-    generate_journals_rss(parsed_issues, journals_xml_path, max_items=250)
+    generate_journals_rss(parsed_issues, journals_xml_path, max_items=350)
     
     # Additional Category Feeds
     generate_category_rss(

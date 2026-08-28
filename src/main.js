@@ -222,26 +222,19 @@ function renderArticles() {
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim();
     filtered = filtered.filter((art) => {
-      const basicMatch =
-        art.title.toLowerCase().includes(q) ||
-        art.body_text.toLowerCase().includes(q) ||
+      return (
+        (art.title && art.title.toLowerCase().includes(q)) ||
+        (art.author && art.author.toLowerCase().includes(q)) ||
+        (art.journal && art.journal.toLowerCase().includes(q)) ||
+        (art.body_text && art.body_text.toLowerCase().includes(q)) ||
         (art.deadline && art.deadline.toLowerCase().includes(q)) ||
-        art.category.toLowerCase().includes(q);
-
-      const paperMatch =
-        art.papers &&
-        art.papers.some(
-          (p) =>
-            p.title.toLowerCase().includes(q) ||
-            (p.author && p.author.toLowerCase().includes(q))
-        );
-
-      return basicMatch || paperMatch;
+        (art.category && art.category.toLowerCase().includes(q))
+      );
     });
   }
 
   if (resultsCountEl) {
-    resultsCountEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'resultado' : 'resultados'}`;
+    resultsCountEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'artículo / convocatoria' : 'artículos / convocatorias'}`;
   }
 
   if (filtered.length === 0) {
@@ -252,7 +245,7 @@ function renderArticles() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h3 class="text-lg font-bold">No se encontraron convocatorias o artículos</h3>
+        <h3 class="text-lg font-bold">No se encontraron artículos o convocatorias</h3>
         <p class="text-base-content/70 mt-1 text-sm">Prueba ajustando los filtros o el término de búsqueda.</p>
         <button id="reset-filters-btn" class="btn btn-outline btn-sm mt-4">Restablecer filtros</button>
       </div>
@@ -274,7 +267,9 @@ function renderArticles() {
 
   articlesContainer.innerHTML = filtered
     .map((art) => {
+      const isJournalPaper = art.category === "Journals" && art.journal;
       const badgeClass = getCategoryBadgeClass(art.category);
+      
       const deadlineHtml = art.deadline
         ? `
         <div class="flex items-center gap-1.5 text-xs font-semibold text-warning bg-warning/10 px-2.5 py-1 rounded-md mt-2 w-fit">
@@ -285,36 +280,52 @@ function renderArticles() {
         </div>`
         : "";
 
-      const papersListHtml =
-        art.papers && art.papers.length > 0
-          ? `<div class="mt-3 pt-3 border-t border-base-200">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-base-content/75 flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                  Artículos incluidos (${art.papers.length})
-                </span>
+      if (isJournalPaper) {
+        return `
+          <article class="card card-bordered bg-base-100 shadow-sm hover:shadow-md hover:border-secondary/50 transition-all flex flex-col justify-between">
+            <div class="card-body p-5">
+              <div class="flex items-start justify-between gap-2 flex-wrap mb-2">
+                <span class="badge badge-secondary/15 text-secondary text-xs font-semibold">Revista Académica</span>
+                <span class="text-xs text-base-content/60 font-medium">Edición #${art.issue_num} • ${art.issue_date}</span>
               </div>
-              <ul class="space-y-2 text-xs divide-y divide-base-200/60 max-h-56 overflow-y-auto pr-1">
-                ${art.papers
-                  .map(
-                    (p) => `
-                  <li class="pt-1.5 first:pt-0">
-                    <a href="${p.link}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline font-semibold leading-tight flex items-start gap-1">
-                      <span>${p.title}</span>
-                      <svg class="w-3 h-3 shrink-0 mt-0.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    </a>
-                    ${p.author ? `<span class="text-base-content/60 block text-[11px] mt-0.5">${p.author}</span>` : ""}
-                  </li>`
-                  )
-                  .join("")}
-              </ul>
-            </div>`
-          : "";
+              
+              <div class="text-xs font-semibold text-secondary/90 flex items-center gap-1.5 mb-1.5">
+                <svg class="w-4 h-4 shrink-0 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <span class="truncate" title="${art.journal}">${art.journal}</span>
+              </div>
+
+              <h3 class="card-title text-base sm:text-lg font-bold leading-snug hover:text-primary transition-colors">
+                <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="flex items-start gap-1">
+                  <span>${art.title}</span>
+                </a>
+              </h3>
+
+              ${
+                art.author
+                  ? `<div class="mt-2 text-xs text-base-content/75 flex items-center gap-1.5 font-medium">
+                      <svg class="w-3.5 h-3.5 shrink-0 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                      <span>${art.author}</span>
+                    </div>`
+                  : ""
+              }
+            </div>
+
+            <div class="card-footer bg-base-200/40 px-5 py-3 border-t border-base-200 flex items-center justify-between gap-2">
+              <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs gap-1 font-semibold">
+                <span>Abrir Artículo</span>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              </a>
+              <a href="${art.newsletter_link || art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-link btn-xs p-0 text-base-content/60 hover:text-primary gap-1">
+                <span>En newsletter</span>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </a>
+            </div>
+          </article>
+        `;
+      }
 
       const extLinksHtml =
-        (!art.papers || art.papers.length === 0) &&
-        art.external_links &&
-        art.external_links.length > 0
+        art.external_links && art.external_links.length > 0
           ? `<div class="mt-4 pt-3 border-t border-base-200 flex flex-wrap gap-2">
               <span class="text-xs text-base-content/60 self-center">Enlaces:</span>
               ${art.external_links
@@ -345,18 +356,15 @@ function renderArticles() {
 
             ${deadlineHtml}
 
-            ${
-              !art.papers || art.papers.length === 0
-                ? `<p class="text-sm text-base-content/80 mt-3 line-clamp-3 leading-relaxed">${art.body_text}</p>`
-                : ""
-            }
+            <p class="text-sm text-base-content/80 mt-3 line-clamp-3 leading-relaxed">
+              ${art.body_text}
+            </p>
 
-            ${papersListHtml}
             ${extLinksHtml}
           </div>
 
           <div class="card-footer bg-base-200/40 px-5 py-3 border-t border-base-200 flex items-center justify-between">
-            <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-link btn-xs p-0 text-primary font-semibold gap-1">
+            <a href="${art.newsletter_link || art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-link btn-xs p-0 text-primary font-semibold gap-1">
               <span>Ver en newsletter</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
