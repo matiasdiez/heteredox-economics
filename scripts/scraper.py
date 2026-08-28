@@ -352,13 +352,8 @@ def generate_journals_rss(issues: list[dict], output_path: str, max_items: int =
     for paper in all_papers:
         item = ET.SubElement(channel, "item")
         
-        # Clear title: Author: "Paper Title" [Journal Name]
-        if paper.get("author"):
-            item_title = f"{paper['author']}: \"{paper['title']}\" [{paper['journal']}]"
-        else:
-            item_title = f"{paper['title']} [{paper['journal']}]"
-            
-        ET.SubElement(item, "title").text = item_title
+        # Prominent clean article title
+        ET.SubElement(item, "title").text = paper["title"]
         ET.SubElement(item, "link").text = paper["link"]
         
         guid = ET.SubElement(item, "guid", isPermaLink="false")
