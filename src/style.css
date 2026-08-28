@@ -215,6 +215,12 @@ html {
   background-color: #059669 !important;
   color: #ffffff !important;
   border-color: #059669 !important;
+  cursor: default;
+}
+:root[data-theme="dark"] .btn-zotero.btn-zotero-saved {
+  background-color: #065f46 !important;
+  color: #ecfdf5 !important;
+  border-color: #047857 !important;
 }
 
 .btn-zotero.btn-zotero-loading {

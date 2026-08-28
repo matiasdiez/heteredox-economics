@@ -529,14 +529,27 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="modal-action flex items-center justify-between pt-2 border-t border-base-300">
-          <button 
-            type="button" 
-            id="zotero-disconnect-btn" 
-            class="btn btn-ghost btn-sm text-error hover:bg-error/10 font-bold rounded-xl hidden"
-          >
-            Desconectar
-          </button>
+        <div class="modal-action flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-base-300">
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              id="zotero-sync-btn" 
+              class="btn btn-outline btn-sm border-base-300 text-base-content hover:bg-base-200 font-bold rounded-xl gap-1.5 hidden"
+              title="Comprobar qué artículos de la web ya están en tu biblioteca de Zotero"
+            >
+              <svg id="zotero-sync-icon" class="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Sincronizar</span>
+            </button>
+            <button 
+              type="button" 
+              id="zotero-disconnect-btn" 
+              class="btn btn-ghost btn-sm text-error hover:bg-error/10 font-bold rounded-xl hidden"
+            >
+              Desconectar
+            </button>
+          </div>
           
           <div class="flex items-center gap-2 ml-auto">
             <button 
