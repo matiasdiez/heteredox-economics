@@ -29,8 +29,8 @@ const toastEl = document.getElementById("toast-notification");
 function setupCopyButtons() {
   const getAbsoluteFeedUrl = (filename) => {
     const origin = window.location.origin;
-    const path = window.location.pathname.replace(/index\.html$/, "").replace(/\/$/, "");
-    return `${origin}${path}/${filename}`;
+    const pathname = window.location.pathname.replace(/index\.html$/, "").replace(/\/$/, "");
+    return `${origin}${pathname}/${filename}`;
   };
 
   const issuesUrl = getAbsoluteFeedUrl("feed.xml");
@@ -82,8 +82,28 @@ function getCategoryBadgeClass(category) {
 // Load Data
 async function loadData() {
   try {
-    const res = await fetch("./data.json");
-    if (!res.ok) throw new Error("No se pudo cargar data.json");
+    const basePath = (import.meta.env.BASE_URL || "./").replace(/\/$/, "");
+    const candidateUrls = [
+      `${basePath}/data.json`,
+      "./data.json",
+      "data.json",
+      "/data.json"
+    ];
+
+    let res = null;
+    for (const url of candidateUrls) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          res = response;
+          break;
+        }
+      } catch (e) {
+        // try next candidate
+      }
+    }
+
+    if (!res) throw new Error("No se pudo cargar data.json");
     dataset = await res.json();
 
     renderHeaderStats();
@@ -95,7 +115,7 @@ async function loadData() {
     if (articlesContainer) {
       articlesContainer.innerHTML = `
         <div class="alert alert-soft alert-error max-w-xl mx-auto my-8">
-          <p>No se pudieron cargar los datos del feed. Por favor ejecuta el scraper o refresca la página.</p>
+          <p>No se pudieron cargar los datos del feed. Por favor refresca la página.</p>
         </div>
       `;
     }

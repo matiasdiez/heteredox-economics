@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  base: "./",
+  base: process.env.GITHUB_ACTIONS ? "/heteredox-economics/" : "./",
   plugins: [tailwindcss()],
   server: {
     port: 3000,

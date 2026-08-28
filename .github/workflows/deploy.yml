@@ -29,6 +29,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -63,20 +65,6 @@ jobs:
         run: |
           pnpm run build
 
-      - name: Commit updated feeds and data (if changed)
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action Bot"
-          git add public/
-          if git diff --staged --quiet; then
-            echo "No new updates in data/feeds."
-          else
-            git commit -m "Auto-update HeterodoxNews feeds and dataset [skip ci]"
-            git push
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
         with:
@@ -90,3 +78,18 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Commit updated feeds and data back to repo
+        if: always()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto-update HeterodoxNews feeds and dataset [skip ci]" || true
+            git pull --rebase origin main || true
+            git push origin main || true
+          fi
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
