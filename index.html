@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Heterodox RSS - Heterodox Economics Newsletter Feed Portal</title>
+  <title>Heterodox RSS - Portal de Feeds de Heterodox Economics Newsletter</title>
   <meta name="description" content="Servicio de RSS automatizado y buscador académico para Heterodox Economics Newsletter. Call for papers, revistas, libros y ofertas laborales." />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2005/svg' viewBox='0 0 24 24' fill='%2312544f'><path d='M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19 7.38 20 6.18 20C5 20 4 19 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93v-2.83Z'/></svg>" />
 </head>
@@ -14,7 +14,7 @@
     <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
     </svg>
-    <span id="toast-message">¡Copiado al portapapeles!</span>
+    <span id="toast-message" data-i18n="toast.copied">¡Copiado al portapapeles!</span>
   </div>
 
   <!-- Header / Navbar -->
@@ -33,7 +33,7 @@
             <div class="font-extrabold text-lg sm:text-xl tracking-tight text-base-content group-hover:text-primary transition-colors flex items-center gap-1.5">
               <span>Heterodox<span class="text-secondary">RSS</span></span>
             </div>
-            <p class="text-[11px] font-medium text-base-content/65 hidden sm:block">Heterodox Economics Newsletter Feed</p>
+            <p class="text-[11px] font-medium text-base-content/65 hidden sm:block" data-i18n="brand.subtitle">Heterodox Economics Newsletter Feed</p>
           </div>
         </a>
       </div>
@@ -42,20 +42,20 @@
       <div class="flex items-center gap-2 sm:gap-3">
         <div class="hidden lg:flex items-center gap-2 text-xs font-semibold bg-base-200 px-3.5 py-1.5 rounded-full border border-base-300">
           <span class="inline-block w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-          <span class="text-base-content/80">Última edición: <strong id="latest-issue-badge" class="text-base-content font-bold">#---</strong></span>
+          <span class="text-base-content/80"><span data-i18n="nav.latest_issue_label">Última edición:</span> <strong id="latest-issue-badge" class="text-base-content font-bold">#---</strong></span>
         </div>
 
         <!-- Zotero Settings Button -->
-        <button id="zotero-modal-trigger" class="btn btn-sm gap-1.5 bg-base-200/90 hover:bg-base-200 border border-base-300 rounded-xl text-xs font-bold text-base-content" title="Configurar conexión con tu biblioteca de Zotero">
+        <button id="zotero-modal-trigger" class="btn btn-sm gap-1.5 bg-base-200/90 hover:bg-base-200 border border-base-300 rounded-xl text-xs font-bold text-base-content" title="Configurar conexión con tu biblioteca de Zotero" data-i18n-title="nav.zotero_title">
           <svg class="w-3.5 h-3.5 text-red-600 fill-current shrink-0" viewBox="0 0 24 24">
             <path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/>
           </svg>
-          <span class="hidden sm:inline">Zotero</span>
-          <span id="zotero-header-status-dot" class="w-2 h-2 rounded-full bg-base-content/30 inline-block" title="Estado de conexión Zotero"></span>
+          <span class="hidden sm:inline" data-i18n="nav.zotero_btn">Zotero</span>
+          <span id="zotero-header-status-dot" class="w-2 h-2 rounded-full bg-base-content/30 inline-block" title="Estado de conexión Zotero" data-i18n-title="nav.zotero_dot_disconnected"></span>
         </button>
 
         <!-- Theme Toggle (Sun / Moon) -->
-        <button id="theme-toggle" class="btn btn-ghost btn-circle btn-sm bg-base-200/80 hover:bg-base-200 border border-base-300" title="Cambiar tema (Claro / Oscuro)">
+        <button id="theme-toggle" class="btn btn-ghost btn-circle btn-sm bg-base-200/80 hover:bg-base-200 border border-base-300" title="Cambiar tema (Claro / Oscuro)" data-i18n-title="nav.theme_toggle_title">
           <!-- Sun Icon (shown when dark) -->
           <svg id="theme-icon-sun" class="w-4 h-4 text-accent hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -66,9 +66,36 @@
           </svg>
         </button>
 
+        <!-- Language Switcher Dropdown (Next to Theme Toggle - Clean, No Flags) -->
+        <div class="relative inline-flex" id="lang-dropdown-wrapper">
+          <button id="lang-toggle-btn" type="button" class="btn btn-ghost btn-sm bg-base-200/80 hover:bg-base-200 border border-base-300 rounded-xl px-2.5 gap-1.5 font-bold text-xs text-base-content" title="Cambiar idioma (Español / English / Français)" data-i18n-title="nav.lang_toggle_title" aria-haspopup="true" aria-expanded="false">
+            <svg class="w-4 h-4 text-base-content/75 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9c-1.284-2.18-2.614-4.502-3.5-7m-4.5 7h9m-9 0c.854-1.282 2.213-3.14 3.5-5m0 0a18.3 18.3 0 004-3.5M16 11l4 9m-1.6-3.6h-4.8"/>
+            </svg>
+            <span id="current-lang-code" class="font-extrabold uppercase text-[11px] tracking-wide">ES</span>
+            <svg class="w-3.5 h-3.5 text-base-content/70 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div id="lang-dropdown-menu" class="hidden absolute right-0 top-full mt-1.5 min-w-[130px] bg-base-100 border border-base-300 rounded-xl p-1.5 shadow-xl z-50 space-y-0.5">
+            <button type="button" data-lang-code="es" class="lang-option-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold hover:bg-base-200 text-base-content transition-colors">
+              <span>Español</span>
+              <span class="lang-check text-primary font-black text-xs">✓</span>
+            </button>
+            <button type="button" data-lang-code="en" class="lang-option-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold hover:bg-base-200 text-base-content transition-colors">
+              <span>English</span>
+              <span class="lang-check text-primary font-black text-xs hidden">✓</span>
+            </button>
+            <button type="button" data-lang-code="fr" class="lang-option-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold hover:bg-base-200 text-base-content transition-colors">
+              <span>Français</span>
+              <span class="lang-check text-primary font-black text-xs hidden">✓</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Official Site Button -->
-        <a href="https://www.heterodoxnews.com/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm hidden sm:inline-flex gap-1.5 border-base-300 hover:bg-primary hover:text-white text-xs font-semibold rounded-xl">
-          <span>Sitio Oficial</span>
+        <a href="https://www.heterodoxnews.com/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm hidden sm:inline-flex gap-1.5 border-base-300 hover:bg-primary hover:text-white text-xs font-semibold rounded-xl" title="Visitar el sitio web oficial de Heterodox Economics Newsletter" data-i18n-title="nav.official_site_title">
+          <span data-i18n="nav.official_site">Sitio Oficial</span>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
           </svg>
@@ -86,37 +113,37 @@
         
         <div class="inline-flex items-center gap-2 bg-secondary/15 text-secondary text-xs font-bold px-3.5 py-1 rounded-full mb-4">
           <span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary animate-ping"></span>
-          <span>Actualizado automáticamente con GitHub Actions</span>
+          <span data-i18n="hero.badge">Actualizado automáticamente con GitHub Actions</span>
         </div>
         
         <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-base-content max-w-3xl mx-auto leading-tight">
-          Heterodox Economics Newsletter en formato <span class="text-primary">RSS</span>
+          <span data-i18n="hero.title_pre">Heterodox Economics Newsletter en formato</span> <span class="text-primary">RSS</span>
         </h1>
-        <p class="mt-4 text-base sm:text-lg text-base-content font-medium max-w-3xl mx-auto leading-relaxed">
+        <p class="mt-4 text-base sm:text-lg text-base-content font-medium max-w-3xl mx-auto leading-relaxed" data-i18n-html="hero.description">
           Suscríbete en tu lector de noticias favorito para recibir <strong>nuevos artículos y papers de revistas académicas</strong>, convocatorias (<em>Call for Papers</em>), novedades editoriales y oportunidades laborales.
         </p>
 
-        <!-- Quantitative Metrics Strip (Preserved) -->
+        <!-- Quantitative Metrics Strip -->
         <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3.5 max-w-4xl mx-auto text-center">
           <div class="card bg-base-100 p-4 rounded-2xl border border-base-300 shadow-xs">
             <span id="stat-total-articles" class="block font-extrabold text-xl sm:text-2xl text-primary">---</span>
-            <span class="text-xs font-bold text-base-content">Artículos Indexados</span>
+            <span class="text-xs font-bold text-base-content" data-i18n="hero.stat_articles">Artículos Indexados</span>
           </div>
           <div class="card bg-base-100 p-4 rounded-2xl border border-base-300 shadow-xs">
             <span id="stat-total-journals" class="block font-extrabold text-xl sm:text-2xl text-secondary">---</span>
-            <span class="text-xs font-bold text-base-content">Revistas Académicas</span>
+            <span class="text-xs font-bold text-base-content" data-i18n="hero.stat_journals">Revistas Académicas</span>
           </div>
           <div class="card bg-base-100 p-4 rounded-2xl border border-base-300 shadow-xs">
             <span id="stat-total-cfps" class="block font-extrabold text-xl sm:text-2xl text-primary">---</span>
-            <span class="text-xs font-bold text-base-content">Call for Papers</span>
+            <span class="text-xs font-bold text-base-content" data-i18n="hero.stat_cfps">Call for Papers</span>
           </div>
           <div class="card bg-base-100 p-4 rounded-2xl border border-base-300 shadow-xs">
             <span id="stat-total-issues" class="block font-extrabold text-xl sm:text-2xl text-secondary">---</span>
-            <span class="text-xs font-bold text-base-content">Ediciones Históricas</span>
+            <span class="text-xs font-bold text-base-content" data-i18n="hero.stat_issues">Ediciones Históricas</span>
           </div>
         </div>
 
-        <!-- Subscription Cards (Restored Original Hero Layout with Clarified Article Feeds) -->
+        <!-- Subscription Cards -->
         <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-5 text-left max-w-5xl mx-auto">
           
           <!-- Feed 1: Edición Completa -->
@@ -129,11 +156,11 @@
                   </svg>
                 </div>
                 <div>
-                  <h3 class="font-bold text-base text-base-content leading-snug">Por Edición Completa</h3>
-                  <p class="text-xs font-semibold text-base-content/85">1 entrada por newsletter</p>
+                  <h3 class="font-bold text-base text-base-content leading-snug" data-i18n="hero.feed1_title">Por Edición Completa</h3>
+                  <p class="text-xs font-semibold text-base-content/85" data-i18n="hero.feed1_sub">1 entrada por newsletter</p>
                 </div>
               </div>
-              <p class="text-xs sm:text-sm text-base-content font-medium mt-2 leading-relaxed">
+              <p class="text-xs sm:text-sm text-base-content font-medium mt-2 leading-relaxed" data-i18n="hero.feed1_desc">
                 Ideal si prefieres leer el editorial completo y la tabla de contenidos agrupada en cada entrega quincenal.
               </p>
             </div>
@@ -141,13 +168,13 @@
             <div class="p-5 pt-0">
               <div class="flex items-center gap-2">
                 <input id="feed-issues-url" type="text" readonly class="input input-sm input-bordered w-full font-mono text-xs text-base-content font-semibold bg-base-200/70 border-base-300 rounded-xl select-all" value="feed.xml" />
-                <button data-copy-target="feed-issues-url" class="btn btn-primary btn-sm shrink-0 gap-1 rounded-xl shadow-xs font-bold" title="Copiar URL">
+                <button data-copy-target="feed-issues-url" class="btn btn-primary btn-sm shrink-0 gap-1 rounded-xl shadow-xs font-bold" title="Copiar URL" data-i18n-title="hero.copy_title">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
                   </svg>
-                  <span>Copiar</span>
+                  <span data-i18n="hero.copy_btn">Copiar</span>
                 </button>
-                <a href="./feed.xml" target="_blank" class="btn btn-outline btn-sm shrink-0 border-base-300 text-base-content font-bold rounded-xl" title="Ver XML">XML</a>
+                <a href="./feed.xml" target="_blank" class="btn btn-outline btn-sm shrink-0 border-base-300 text-base-content font-bold rounded-xl" title="Ver XML" data-i18n-title="hero.view_xml_title">XML</a>
               </div>
             </div>
           </div>
@@ -163,13 +190,13 @@
                     </svg>
                   </div>
                   <div>
-                    <h3 class="font-bold text-base text-base-content leading-snug">Revistas y Nuevos Artículos</h3>
-                    <p class="text-xs text-secondary font-bold">Sumarios y papers indexados</p>
+                    <h3 class="font-bold text-base text-base-content leading-snug" data-i18n="hero.feed2_title">Revistas y Nuevos Artículos</h3>
+                    <p class="text-xs text-secondary font-bold" data-i18n="hero.feed2_sub">Sumarios y papers indexados</p>
                   </div>
                 </div>
-                <span class="badge badge-secondary text-white text-[10px] font-black px-2 py-0.5 rounded-md">Nuevo</span>
+                <span class="badge badge-secondary text-white text-[10px] font-black px-2 py-0.5 rounded-md" data-i18n="hero.feed2_badge">Nuevo</span>
               </div>
-              <p class="text-xs sm:text-sm text-base-content font-medium mt-2 leading-relaxed">
+              <p class="text-xs sm:text-sm text-base-content font-medium mt-2 leading-relaxed" data-i18n="hero.feed2_desc">
                 Recibe cada nuevo artículo académico, sumario (TOC) y número especial publicado en revistas de economía crítica.
               </p>
             </div>
@@ -177,13 +204,13 @@
             <div class="p-5 pt-0">
               <div class="flex items-center gap-2">
                 <input id="feed-journals-url" type="text" readonly class="input input-sm input-bordered w-full font-mono text-xs text-base-content font-semibold bg-base-200/70 border-base-300 rounded-xl select-all" value="journals.xml" />
-                <button data-copy-target="feed-journals-url" class="btn btn-secondary btn-sm shrink-0 gap-1 rounded-xl shadow-xs text-white font-bold" title="Copiar URL">
+                <button data-copy-target="feed-journals-url" class="btn btn-secondary btn-sm shrink-0 gap-1 rounded-xl shadow-xs text-white font-bold" title="Copiar URL" data-i18n-title="hero.copy_title">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
                   </svg>
-                  <span>Copiar</span>
+                  <span data-i18n="hero.copy_btn">Copiar</span>
                 </button>
-                <a href="./journals.xml" target="_blank" class="btn btn-outline btn-sm shrink-0 border-base-300 text-base-content font-bold rounded-xl" title="Ver XML">XML</a>
+                <a href="./journals.xml" target="_blank" class="btn btn-outline btn-sm shrink-0 border-base-300 text-base-content font-bold rounded-xl" title="Ver XML" data-i18n-title="hero.view_xml_title">XML</a>
               </div>
             </div>
           </div>
@@ -198,11 +225,11 @@
                   </svg>
                 </div>
                 <div>
-                  <h3 class="font-bold text-base text-base-content leading-snug">Feed Granular por Entrada</h3>
-                  <p class="text-xs font-semibold text-base-content/85">1 entrada por cada artículo o CFP</p>
+                  <h3 class="font-bold text-base text-base-content leading-snug" data-i18n="hero.feed3_title">Feed Granular por Entrada</h3>
+                  <p class="text-xs font-semibold text-base-content/85" data-i18n="hero.feed3_sub">1 entrada por cada artículo o CFP</p>
                 </div>
               </div>
-              <p class="text-xs sm:text-sm text-base-content font-medium mt-2 leading-relaxed">
+              <p class="text-xs sm:text-sm text-base-content font-medium mt-2 leading-relaxed" data-i18n="hero.feed3_desc">
                 Recibe alertas individuales por cada artículo publicado o convocatoria, con seguimiento directo de plazos y filtros por categorías.
               </p>
             </div>
@@ -210,32 +237,32 @@
             <div class="p-5 pt-0">
               <div class="flex items-center gap-2">
                 <input id="feed-articles-url" type="text" readonly class="input input-sm input-bordered w-full font-mono text-xs text-base-content font-semibold bg-base-200/70 border-base-300 rounded-xl select-all" value="articles.xml" />
-                <button data-copy-target="feed-articles-url" class="btn btn-primary btn-sm shrink-0 gap-1 rounded-xl shadow-xs font-bold" title="Copiar URL">
+                <button data-copy-target="feed-articles-url" class="btn btn-primary btn-sm shrink-0 gap-1 rounded-xl shadow-xs font-bold" title="Copiar URL" data-i18n-title="hero.copy_title">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
                   </svg>
-                  <span>Copiar</span>
+                  <span data-i18n="hero.copy_btn">Copiar</span>
                 </button>
-                <a href="./articles.xml" target="_blank" class="btn btn-outline btn-sm shrink-0 border-base-300 text-base-content font-bold rounded-xl" title="Ver XML">XML</a>
+                <a href="./articles.xml" target="_blank" class="btn btn-outline btn-sm shrink-0 border-base-300 text-base-content font-bold rounded-xl" title="Ver XML" data-i18n-title="hero.view_xml_title">XML</a>
               </div>
             </div>
           </div>
 
         </div>
 
-        <!-- Additional Category Feeds Bar (High Contrast & Clear Readability) -->
+        <!-- Additional Category Feeds Bar -->
         <div class="mt-7 inline-flex flex-wrap items-center justify-center gap-2.5 bg-base-100 p-2 sm:px-5 sm:py-2.5 rounded-2xl sm:rounded-full border border-base-300 shadow-xs">
-          <span class="font-extrabold text-sm text-base-content mr-1">Otros feeds directos:</span>
-          <a href="./cfp.xml" target="_blank" class="btn btn-xs rounded-full border border-base-300 bg-base-200/80 hover:bg-primary hover:text-white hover:border-primary text-base-content font-bold px-3.5 py-1.5 transition-all shadow-2xs gap-1.5" title="Feed XML de Call for Papers">
-            <span>📣 Call for Papers</span>
+          <span class="font-extrabold text-sm text-base-content mr-1" data-i18n="hero.other_feeds_label">Otros feeds directos:</span>
+          <a href="./cfp.xml" target="_blank" class="btn btn-xs rounded-full border border-base-300 bg-base-200/80 hover:bg-primary hover:text-white hover:border-primary text-base-content font-bold px-3.5 py-1.5 transition-all shadow-2xs gap-1.5" title="Feed XML de Call for Papers" data-i18n-title="hero.feed_cfp_title">
+            <span data-i18n="hero.feed_cfp">📣 Call for Papers</span>
             <span class="badge badge-xs bg-base-100 text-base-content font-mono font-extrabold px-1.5 py-0.5 rounded-full border border-base-300">.xml</span>
           </a>
-          <a href="./jobs.xml" target="_blank" class="btn btn-xs rounded-full border border-base-300 bg-base-200/80 hover:bg-secondary hover:text-white hover:border-secondary text-base-content font-bold px-3.5 py-1.5 transition-all shadow-2xs gap-1.5" title="Feed XML de Ofertas de Empleo">
-            <span>💼 Ofertas de Empleo</span>
+          <a href="./jobs.xml" target="_blank" class="btn btn-xs rounded-full border border-base-300 bg-base-200/80 hover:bg-secondary hover:text-white hover:border-secondary text-base-content font-bold px-3.5 py-1.5 transition-all shadow-2xs gap-1.5" title="Feed XML de Ofertas de Empleo" data-i18n-title="hero.feed_jobs_title">
+            <span data-i18n="hero.feed_jobs">💼 Ofertas de Empleo</span>
             <span class="badge badge-xs bg-base-100 text-base-content font-mono font-extrabold px-1.5 py-0.5 rounded-full border border-base-300">.xml</span>
           </a>
-          <a href="./books.xml" target="_blank" class="btn btn-xs rounded-full border border-base-300 bg-base-200/80 hover:bg-primary hover:text-white hover:border-primary text-base-content font-bold px-3.5 py-1.5 transition-all shadow-2xs gap-1.5" title="Feed XML de Libros">
-            <span>📚 Libros</span>
+          <a href="./books.xml" target="_blank" class="btn btn-xs rounded-full border border-base-300 bg-base-200/80 hover:bg-primary hover:text-white hover:border-primary text-base-content font-bold px-3.5 py-1.5 transition-all shadow-2xs gap-1.5" title="Feed XML de Libros" data-i18n-title="hero.feed_books_title">
+            <span data-i18n="hero.feed_books">📚 Libros</span>
             <span class="badge badge-xs bg-base-100 text-base-content font-mono font-extrabold px-1.5 py-0.5 rounded-full border border-base-300">.xml</span>
           </a>
         </div>
@@ -253,13 +280,13 @@
             </svg>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <span>Nota Editorial: <span id="editorial-issue-num" class="font-extrabold text-primary">Última Edición</span></span>
+            <span><span data-i18n="editorial.title">Nota Editorial:</span> <span id="editorial-issue-num" class="font-extrabold text-primary" data-i18n="editorial.latest_issue_badge">Última Edición</span></span>
             <span id="editorial-date" class="text-xs font-bold text-base-content/85"></span>
           </div>
         </summary>
         <div class="collapse-content px-6 pb-6 pt-2 border-t border-base-300/50">
           <div id="editorial-content" class="editorial-prose text-sm text-base-content font-medium mt-2 leading-relaxed">
-            <p>Cargando nota editorial...</p>
+            <p data-i18n="editorial.loading">Cargando nota editorial...</p>
           </div>
         </div>
       </details>
@@ -268,7 +295,7 @@
     <!-- Interactive Articles & Convocatorias Explorer -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-12">
       
-      <!-- Filter & Controls Toolbar (20% Larger Typography & Spacious Controls) -->
+      <!-- Filter & Controls Toolbar -->
       <div class="bg-base-100 border border-base-300 rounded-2xl p-6 sm:p-7 shadow-xs space-y-6">
         
         <!-- Search & Dropdown Controls -->
@@ -280,13 +307,14 @@
               id="search-input" 
               type="text" 
               placeholder="Buscar por revista, palabra clave, autor o convocatoria..." 
+              data-i18n-placeholder="search.placeholder"
               class="input input-bordered w-full pl-11 pr-20 text-base bg-base-200/50 focus:bg-base-100 border-base-300 rounded-xl text-base-content font-medium placeholder:text-base-content/50 h-11"
             />
             <svg class="w-5 h-5 absolute left-3.5 top-3 text-base-content/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <div class="absolute right-3 top-2.5 flex items-center gap-1">
-              <button id="clear-search-btn" class="btn btn-ghost btn-xs btn-circle hidden" title="Limpiar búsqueda">✕</button>
+              <button id="clear-search-btn" class="btn btn-ghost btn-xs btn-circle hidden" title="Limpiar búsqueda" data-i18n-title="search.clear_title">✕</button>
               <kbd class="kbd kbd-sm hidden sm:inline-flex text-xs text-base-content font-bold bg-base-200 border-base-300 px-2 py-0.5">/</kbd>
             </div>
           </div>
@@ -294,27 +322,27 @@
           <!-- Controls: Issue Filter + Sort By + View Mode Switcher -->
           <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap">
             
-            <!-- Issue Select (20% larger text) -->
+            <!-- Issue Select -->
             <select id="issue-select" class="select select-bordered text-sm sm:text-[14.5px] font-bold min-w-[160px] bg-base-200/70 border-base-300 rounded-xl text-base-content h-11 px-3.5">
-              <option value="ALL">Todas las ediciones</option>
+              <option value="ALL" data-i18n="filters.all_issues">Todas las ediciones</option>
             </select>
 
-            <!-- Sort By Select (20% larger text) -->
-            <select id="sort-select" class="select select-bordered text-sm sm:text-[14.5px] font-bold min-w-[170px] bg-base-200/70 border-base-300 rounded-xl text-base-content h-11 px-3.5" title="Ordenar resultados">
-              <option value="recent">⏱️ Más recientes</option>
-              <option value="deadline">📅 Próximos plazos</option>
-              <option value="issue_desc">🔢 Edición (Desc)</option>
-              <option value="title_asc">🔤 Título (A-Z)</option>
+            <!-- Sort By Select -->
+            <select id="sort-select" class="select select-bordered text-sm sm:text-[14.5px] font-bold min-w-[170px] bg-base-200/70 border-base-300 rounded-xl text-base-content h-11 px-3.5" title="Ordenar resultados" data-i18n-title="sort.title">
+              <option value="recent" data-i18n="sort.recent">⏱️ Más recientes</option>
+              <option value="deadline" data-i18n="sort.deadline">📅 Próximos plazos</option>
+              <option value="issue_desc" data-i18n="sort.issue_desc">🔢 Edición (Desc)</option>
+              <option value="title_asc" data-i18n="sort.title_asc">🔤 Título (A-Z)</option>
             </select>
 
-            <!-- View Mode Switcher (Spacious & High-Contrast Icons) -->
+            <!-- View Mode Switcher -->
             <div class="flex items-center gap-1 p-1 bg-base-200/90 border border-base-300 rounded-xl shrink-0 shadow-2xs h-11">
-              <button id="view-grid-btn" class="btn btn-sm btn-primary text-primary-content shadow-xs rounded-lg px-3 py-2 flex items-center justify-center font-bold transition-all h-9" title="Vista Grilla (Tarjetas)">
+              <button id="view-grid-btn" class="btn btn-sm btn-primary text-primary-content shadow-xs rounded-lg px-3 py-2 flex items-center justify-center font-bold transition-all h-9" title="Vista Grilla (Tarjetas)" data-i18n-title="view.grid_title">
                 <svg class="w-5 h-5 text-current shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                 </svg>
               </button>
-              <button id="view-list-btn" class="btn btn-sm bg-transparent text-base-content hover:bg-base-300 rounded-lg px-3 py-2 flex items-center justify-center font-bold transition-all h-9 border-0" title="Vista Lista Compacta">
+              <button id="view-list-btn" class="btn btn-sm bg-transparent text-base-content hover:bg-base-300 rounded-lg px-3 py-2 flex items-center justify-center font-bold transition-all h-9 border-0" title="Vista Lista Compacta" data-i18n-title="view.list_title">
                 <svg class="w-5 h-5 text-current shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
@@ -324,19 +352,19 @@
           </div>
         </div>
 
-        <!-- Category Pills Section (20% Larger & High Contrast with Padded Reset Button) -->
+        <!-- Category Pills Section -->
         <div class="pt-2 border-t border-base-300/40">
           <div class="flex items-center justify-between gap-3 mb-3.5">
-            <span class="text-sm sm:text-base font-black text-base-content uppercase tracking-wider">Categorías:</span>
-            <button id="reset-all-filters-btn" class="btn btn-sm btn-outline border-base-300 text-base-content hover:bg-error hover:text-white hover:border-error text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-2xs hidden items-center gap-1.5" title="Restablecer todos los filtros aplicados">
+            <span class="text-sm sm:text-base font-black text-base-content uppercase tracking-wider" data-i18n="categories.heading">Categorías:</span>
+            <button id="reset-all-filters-btn" class="btn btn-sm btn-outline border-base-300 text-base-content hover:bg-error hover:text-white hover:border-error text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-2xs hidden items-center gap-1.5" title="Restablecer todos los filtros aplicados" data-i18n-title="filters.reset_title">
               <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>Restablecer todo</span>
+              <span data-i18n="filters.reset_btn">Restablecer todo</span>
             </button>
           </div>
           <div id="category-filters" class="flex flex-wrap gap-2.5">
-            <!-- Dynamically populated category pills with larger font -->
+            <!-- Dynamically populated category pills -->
           </div>
         </div>
 
@@ -345,10 +373,10 @@
       <!-- Results Stats & Active Filter Bar -->
       <div class="flex items-center justify-between mt-6 mb-4 px-1">
         <div class="flex items-center gap-2.5">
-          <p id="results-count" class="text-base sm:text-lg font-black text-base-content">Cargando convocatorias...</p>
+          <p id="results-count" class="text-base sm:text-lg font-black text-base-content" data-i18n="results.loading">Cargando convocatorias...</p>
           <span id="active-category-indicator" class="hidden text-xs sm:text-sm font-bold badge badge-secondary text-white rounded-full px-3 py-1"></span>
         </div>
-        <span class="text-xs sm:text-sm font-bold text-base-content/85">Actualizado: <span id="last-updated" class="font-extrabold">---</span></span>
+        <span class="text-xs sm:text-sm font-bold text-base-content/85"><span data-i18n="results.last_updated">Actualizado:</span> <span id="last-updated" class="font-extrabold">---</span></span>
       </div>
 
       <!-- Dynamic Articles / Rows Container -->
@@ -361,8 +389,8 @@
     <!-- RSS Readers Quick Setup Guide -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-base-300">
       <div class="text-center mb-8">
-        <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-base-content">¿Cómo añadir el feed a tu lector de noticias favorito?</h2>
-        <p class="text-xs sm:text-sm text-base-content font-medium mt-1">Copia cualquiera de las URLs de arriba e incorpórala a tu aplicación:</p>
+        <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-base-content" data-i18n="guide.title">¿Cómo añadir el feed a tu lector de noticias favorito?</h2>
+        <p class="text-xs sm:text-sm text-base-content font-medium mt-1" data-i18n="guide.subtitle">Copia cualquiera de las URLs de arriba e incorpórala a tu aplicación:</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
@@ -370,9 +398,9 @@
         <div class="card bg-base-100 p-5 rounded-2xl border border-base-300 shadow-xs">
           <div class="flex items-center gap-2 font-bold text-sm mb-1.5 text-base-content">
             <span class="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-xs font-black">N</span>
-            <span>NetNewsWire / Reeder</span>
+            <span data-i18n="guide.app1_title">NetNewsWire / Reeder</span>
           </div>
-          <p class="text-xs text-base-content font-medium leading-relaxed">
+          <p class="text-xs text-base-content font-medium leading-relaxed" data-i18n-html="guide.app1_desc">
             Pulsa <strong>+</strong> (Add Feed), pega la URL directa y organízalo en tu carpeta de Economía.
           </p>
         </div>
@@ -380,9 +408,9 @@
         <div class="card bg-base-100 p-5 rounded-2xl border border-base-300 shadow-xs">
           <div class="flex items-center gap-2 font-bold text-sm mb-1.5 text-base-content">
             <span class="w-6 h-6 rounded-lg bg-secondary/20 text-secondary flex items-center justify-center text-xs font-black">F</span>
-            <span>Inoreader / Feedly</span>
+            <span data-i18n="guide.app2_title">Inoreader / Feedly</span>
           </div>
-          <p class="text-xs text-base-content font-medium leading-relaxed">
+          <p class="text-xs text-base-content font-medium leading-relaxed" data-i18n-html="guide.app2_desc">
             Pega la URL en la barra de búsqueda superior y haz clic en <em>Subscribe / Seguir</em>.
           </p>
         </div>
@@ -390,9 +418,9 @@
         <div class="card bg-base-100 p-5 rounded-2xl border border-base-300 shadow-xs">
           <div class="flex items-center gap-2 font-bold text-sm mb-1.5 text-base-content">
             <span class="w-6 h-6 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-xs font-black">T</span>
-            <span>Thunderbird / Outlook</span>
+            <span data-i18n="guide.app3_title">Thunderbird / Outlook</span>
           </div>
-          <p class="text-xs text-base-content font-medium leading-relaxed">
+          <p class="text-xs text-base-content font-medium leading-relaxed" data-i18n-html="guide.app3_desc">
             Crea una suscripción en la carpeta de <em>Blogs & Feeds</em> y pega el enlace del XML.
           </p>
         </div>
@@ -400,9 +428,9 @@
         <div class="card bg-base-100 p-5 rounded-2xl border border-base-300 shadow-xs">
           <div class="flex items-center gap-2 font-bold text-sm mb-1.5 text-base-content">
             <span class="w-6 h-6 rounded-lg bg-accent/25 text-accent-content flex items-center justify-center text-xs font-black">S</span>
-            <span>Slack / Bots Telegram</span>
+            <span data-i18n="guide.app4_title">Slack / Bots Telegram</span>
           </div>
-          <p class="text-xs text-base-content font-medium leading-relaxed">
+          <p class="text-xs text-base-content font-medium leading-relaxed" data-i18n-html="guide.app4_desc">
             Usa <code>/feed subscribe &lt;URL&gt;</code> en Slack o bots RSS en Telegram y Discord.
           </p>
         </div>
@@ -415,10 +443,10 @@
   <!-- Footer -->
   <footer class="bg-base-100 border-t border-base-300 py-10 px-4 sm:px-6 lg:px-8 text-center text-xs text-base-content shadow-xs">
     <div class="max-w-7xl mx-auto space-y-2">
-      <p class="font-medium">
+      <p class="font-medium" data-i18n-html="footer.line1">
         Contenidos originales editados por <strong>Heterodox Economics Newsletter</strong> (Jakob Kapeller y consorcio internacional).
       </p>
-      <p class="text-base-content/80 font-medium">
+      <p class="text-base-content/80 font-medium" data-i18n="footer.line2">
         Portal de código abierto para difusión de convocatorias y bibliografía de economía crítica.
       </p>
     </div>
@@ -437,11 +465,11 @@
             </svg>
           </div>
           <div>
-            <h3 class="font-extrabold text-lg text-base-content leading-tight">Configuración de Zotero</h3>
-            <p class="text-xs text-base-content/75 font-medium">Guarda artículos en tu biblioteca con 1 clic</p>
+            <h3 class="font-extrabold text-lg text-base-content leading-tight" data-i18n="zotero.modal_title">Configuración de Zotero</h3>
+            <p class="text-xs text-base-content/75 font-medium" data-i18n="zotero.modal_subtitle">Guarda artículos en tu biblioteca con 1 clic</p>
           </div>
         </div>
-        <button id="zotero-modal-close-btn" class="btn btn-ghost btn-circle btn-sm" title="Cerrar ventana">✕</button>
+        <button id="zotero-modal-close-btn" class="btn btn-ghost btn-circle btn-sm" title="Cerrar ventana" data-i18n-title="zotero.modal_close_title">✕</button>
       </div>
 
       <!-- Quick Instructions Box -->
@@ -450,12 +478,12 @@
           <svg class="w-4 h-4 text-primary shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>¿Cómo obtener tus credenciales en 30 segundos?</span>
+          <span data-i18n="zotero.guide_heading">¿Cómo obtener tus credenciales en 30 segundos?</span>
         </div>
         <ol class="list-decimal list-inside space-y-1 text-base-content/85 font-medium pl-1">
-          <li>Abre <a href="https://www.zotero.org/settings/keys" target="_blank" rel="noopener noreferrer" class="text-primary font-bold underline">zotero.org/settings/keys</a> en tu navegador.</li>
-          <li>Copia tu <strong>User ID</strong> numérico (arriba de la página).</li>
-          <li>Haz clic en <em>"Create new private key"</em>, dale acceso de <strong>lectura/escritura</strong> y copia la clave generada.</li>
+          <li data-i18n-html="zotero.guide_step1">Abre <a href="https://www.zotero.org/settings/keys" target="_blank" rel="noopener noreferrer" class="text-primary font-bold underline">zotero.org/settings/keys</a> en tu navegador.</li>
+          <li data-i18n-html="zotero.guide_step2">Copia tu <strong>User ID</strong> numérico (arriba de la página).</li>
+          <li data-i18n-html="zotero.guide_step3">Haz clic en <em>"Create new private key"</em>, dale acceso de <strong>lectura/escritura</strong> y copia la clave generada.</li>
         </ol>
       </div>
 
@@ -465,28 +493,30 @@
         <!-- User ID Input -->
         <div>
           <label for="zotero-user-id-input" class="block text-xs font-bold text-base-content mb-1">
-            Zotero User ID <span class="text-red-500">*</span>
+            <span data-i18n="zotero.user_id_label">Zotero User ID</span> <span class="text-red-500">*</span>
           </label>
           <input 
             type="text" 
             id="zotero-user-id-input" 
             placeholder="Ej: 8492019" 
+            data-i18n-placeholder="zotero.user_id_placeholder"
             class="input input-bordered w-full text-sm bg-base-200/50 focus:bg-base-100 border-base-300 rounded-xl font-mono text-base-content" 
             required 
           />
-          <p class="text-[11px] text-base-content/60 mt-1">Identificador numérico de tu cuenta personal en Zotero.</p>
+          <p class="text-[11px] text-base-content/60 mt-1" data-i18n="zotero.user_id_hint">Identificador numérico de tu cuenta personal en Zotero.</p>
         </div>
 
         <!-- API Key Input -->
         <div>
           <label for="zotero-api-key-input" class="block text-xs font-bold text-base-content mb-1">
-            Zotero API Key <span class="text-red-500">*</span>
+            <span data-i18n="zotero.api_key_label">Zotero API Key</span> <span class="text-red-500">*</span>
           </label>
           <div class="relative">
             <input 
               type="password" 
               id="zotero-api-key-input" 
               placeholder="Ej: 2YxN8aBc..." 
+              data-i18n-placeholder="zotero.api_key_placeholder"
               class="input input-bordered w-full text-sm bg-base-200/50 focus:bg-base-100 border-base-300 rounded-xl font-mono text-base-content pr-10" 
               required 
             />
@@ -495,6 +525,7 @@
               id="zotero-toggle-key-visibility" 
               class="btn btn-ghost btn-xs btn-circle absolute right-2 top-2 text-base-content/60 hover:text-base-content" 
               title="Mostrar / ocultar API key"
+              data-i18n-title="zotero.api_key_toggle_title"
             >
               <svg id="eye-icon-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -505,21 +536,22 @@
               </svg>
             </button>
           </div>
-          <p class="text-[11px] text-base-content/60 mt-1">Clave de acceso privada con permiso de escritura ("Allow write access").</p>
+          <p class="text-[11px] text-base-content/60 mt-1" data-i18n="zotero.api_key_hint">Clave de acceso privada con permiso de escritura ("Allow write access").</p>
         </div>
 
         <!-- Optional Collection Key Input -->
         <div>
-          <label for="zotero-collection-input" class="block text-xs font-bold text-base-content mb-1">
+          <label for="zotero-collection-input" class="block text-xs font-bold text-base-content mb-1" data-i18n="zotero.collection_label">
             Colección / Carpeta (Opcional)
           </label>
           <input 
             type="text" 
             id="zotero-collection-input" 
             placeholder="Clave de colección (ej: 8J2K9LM) o en blanco para la raíz" 
+            data-i18n-placeholder="zotero.collection_placeholder"
             class="input input-bordered w-full text-sm bg-base-200/50 focus:bg-base-100 border-base-300 rounded-xl font-mono text-base-content" 
           />
-          <p class="text-[11px] text-base-content/60 mt-1">Si lo dejas en blanco, se guardará directamente en "Mi biblioteca" (My Library).</p>
+          <p class="text-[11px] text-base-content/60 mt-1" data-i18n="zotero.collection_hint">Si lo dejas en blanco, se guardará directamente en "Mi biblioteca" (My Library).</p>
         </div>
 
         <!-- Status Message Banner -->
@@ -536,16 +568,18 @@
               id="zotero-sync-btn" 
               class="btn btn-outline btn-sm border-base-300 text-base-content hover:bg-base-200 font-bold rounded-xl gap-1.5 hidden"
               title="Comprobar qué artículos de la web ya están en tu biblioteca de Zotero"
+              data-i18n-title="zotero.sync_btn_title"
             >
               <svg id="zotero-sync-icon" class="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>Sincronizar</span>
+              <span data-i18n="zotero.sync_btn">Sincronizar</span>
             </button>
             <button 
               type="button" 
               id="zotero-disconnect-btn" 
               class="btn btn-ghost btn-sm text-error hover:bg-error/10 font-bold rounded-xl hidden"
+              data-i18n="zotero.disconnect_btn"
             >
               Desconectar
             </button>
@@ -556,6 +590,7 @@
               type="button" 
               id="zotero-cancel-btn" 
               class="btn btn-ghost btn-sm font-bold rounded-xl"
+              data-i18n="zotero.cancel_btn"
             >
               Cancelar
             </button>
@@ -567,7 +602,7 @@
               <svg class="w-4 h-4 fill-current text-white shrink-0" viewBox="0 0 24 24">
                 <path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/>
               </svg>
-              <span>Verificar y Guardar</span>
+              <span data-i18n="zotero.save_btn">Verificar y Guardar</span>
             </button>
           </div>
         </div>

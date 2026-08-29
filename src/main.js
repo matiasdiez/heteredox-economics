@@ -1,5 +1,16 @@
 import "./style.css";
 import "flyonui/flyonui";
+import {
+  getCurrentLanguage,
+  setLanguage,
+  t,
+  translateCategory,
+  formatArticleDate,
+  formatDeadlineDate,
+  formatLocaleDate,
+  formatArticleBodyText,
+  SUPPORTED_LANGUAGES
+} from "./i18n.js";
 
 // Application State
 let dataset = null;
@@ -14,8 +25,9 @@ const storedTheme = localStorage.getItem("theme");
 const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 let currentTheme = storedTheme || (prefersDark ? "dark" : "light");
 
-// Apply Initial Theme
+// Apply Initial Theme & Language attribute
 document.documentElement.setAttribute("data-theme", currentTheme);
+document.documentElement.setAttribute("lang", getCurrentLanguage());
 
 // DOM Elements
 const articlesContainer = document.getElementById("articles-container");
@@ -39,6 +51,13 @@ const toastEl = document.getElementById("toast-notification");
 const toastMessageEl = document.getElementById("toast-message");
 const viewGridBtn = document.getElementById("view-grid-btn");
 const viewListBtn = document.getElementById("view-list-btn");
+
+// Language Dropdown Elements (No Flags)
+const langToggleBtn = document.getElementById("lang-toggle-btn");
+const langDropdownMenu = document.getElementById("lang-dropdown-menu");
+const langDropdownWrapper = document.getElementById("lang-dropdown-wrapper");
+const currentLangCode = document.getElementById("current-lang-code");
+const langOptionBtns = document.querySelectorAll(".lang-option-btn");
 
 // Zotero DOM Elements & State
 const zoteroModal = document.getElementById("zotero-modal");
@@ -76,42 +95,6 @@ const statTotalJournals = document.getElementById("stat-total-journals");
 const statTotalCfps = document.getElementById("stat-total-cfps");
 const statTotalIssues = document.getElementById("stat-total-issues");
 
-// RSS Feed Hub State & Definitions
-const feedDefinitions = {
-  issues: {
-    filename: "feed.xml",
-    label: "Edición Completa",
-    description: "Feed por edición quincenal completa (editorial + tabla de contenidos agrupada en cada entrega)."
-  },
-  journals: {
-    filename: "journals.xml",
-    label: "Solo Revistas (Journals)",
-    description: "Feed filtrado exclusivamente con nuevos números, sumarios y números especiales de revistas académicas."
-  },
-  cfp: {
-    filename: "cfp.xml",
-    label: "Call for Papers",
-    description: "Feed dedicado a convocatorias de ponencias, conferencias y workshops con fechas límite."
-  },
-  jobs: {
-    filename: "jobs.xml",
-    label: "Ofertas de Empleo",
-    description: "Feed filtrado con ofertas académicas, plazas postdoctorales, becas y vacantes docentes."
-  },
-  books: {
-    filename: "books.xml",
-    label: "Libros y Reseñas",
-    description: "Feed con lanzamientos de novedades editoriales, series y libros de economía heterodoxa."
-  },
-  articles: {
-    filename: "articles.xml",
-    label: "Todo por Convocatoria / Artículo",
-    description: "Feed granular individual para cada CFP, revista, libro o anuncio indexado."
-  }
-};
-
-let activeFeedKey = "issues";
-
 // Helper to get absolute feed URL
 function getAbsoluteFeedUrl(filename) {
   const origin = window.location.origin;
@@ -139,9 +122,9 @@ function setupCopyButtons() {
       if (!targetInput) return;
 
       navigator.clipboard.writeText(targetInput.value).then(() => {
-        showToast("¡URL del feed copiada al portapapeles!");
+        showToast(t("toast.feed_url_copied"));
         const originalContent = btn.innerHTML;
-        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg><span>¡Copiado!</span>`;
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg><span>${t("hero.copied_btn")}</span>`;
         btn.classList.add("btn-success");
         setTimeout(() => {
           btn.innerHTML = originalContent;
@@ -246,7 +229,6 @@ function normalizeTitle(str) {
 // Cache Management for Saved Items (Per individual article / book)
 function loadSavedZoteroCache() {
   try {
-    // Clear legacy cache with shared newsletter anchors if present
     localStorage.removeItem("zotero_saved_articles_cache");
     const raw = localStorage.getItem("zotero_saved_articles_cache_v2");
     if (raw) {
@@ -292,7 +274,6 @@ function markArticleAsSaved(art) {
 function isArticleSavedInZotero(art) {
   if (!art) return false;
   
-  // 1. Check direct unique article / book link
   const primaryLink = getPrimaryArticleLink(art);
   if (isValidZoteroUrl(primaryLink) && savedZoteroCache.urls.has(normalizeZoteroKey(primaryLink))) {
     return true;
@@ -301,7 +282,6 @@ function isArticleSavedInZotero(art) {
     return true;
   }
 
-  // 2. Check individual article title (exact normalized title)
   const normTitle = normalizeTitle(art.title);
   if (normTitle && savedZoteroCache.titles.has(normTitle)) {
     return true;
@@ -323,10 +303,10 @@ function updateZoteroHeaderUI() {
   if (zoteroHeaderStatusDot) {
     if (isConfigured) {
       zoteroHeaderStatusDot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block shadow-xs";
-      zoteroHeaderStatusDot.title = "Zotero conectado y sincronizado";
+      zoteroHeaderStatusDot.title = t("nav.zotero_dot_connected");
     } else {
       zoteroHeaderStatusDot.className = "w-2 h-2 rounded-full bg-base-content/30 inline-block";
-      zoteroHeaderStatusDot.title = "Zotero no configurado (haz clic para conectar)";
+      zoteroHeaderStatusDot.title = t("nav.zotero_dot_disconnected");
     }
   }
 }
@@ -357,8 +337,9 @@ function openZoteroModal(prefillStatusMsg = null) {
     showZoteroModalStatus(prefillStatusMsg.text, prefillStatusMsg.type);
   } else if (isConfigured) {
     const cachedCount = savedZoteroCache.titles.size;
+    const countStr = cachedCount > 0 ? t("zotero.status_cached_refs", { count: cachedCount }) : t("zotero.status_library_ready");
     showZoteroModalStatus(
-      `Conectado (User ID: ${userId}). ${cachedCount > 0 ? `${cachedCount} referencias detectadas en biblioteca.` : "Biblioteca lista."}`,
+      t("zotero.status_connected_msg", { userId, countStr }),
       "success"
     );
   } else {
@@ -415,7 +396,7 @@ function hideZoteroModalStatus() {
 
 function parseCreators(authorStr) {
   if (!authorStr || typeof authorStr !== "string") return [];
-  const parts = authorStr.split(/\s*(?:,| and | y | & )\s*/i).filter(Boolean);
+  const parts = authorStr.split(/\s*(?:,| and | y | & | et )\s*/i).filter(Boolean);
   return parts.map((name) => {
     const clean = name.trim();
     const spaceIndex = clean.lastIndexOf(" ");
@@ -450,7 +431,7 @@ function formatArticleForZotero(art, collectionKey) {
   if (isJournal) {
     return {
       itemType: "journalArticle",
-      title: art.title || "Sin título",
+      title: art.title || "Untitled",
       creators: creators,
       publicationTitle: art.journal || "",
       date: art.issue_date || "",
@@ -465,7 +446,7 @@ function formatArticleForZotero(art, collectionKey) {
   if (isBook) {
     return {
       itemType: "book",
-      title: art.title || "Sin título",
+      title: art.title || "Untitled",
       creators: creators,
       date: art.issue_date || "",
       url: primaryLink,
@@ -478,7 +459,7 @@ function formatArticleForZotero(art, collectionKey) {
 
   return {
     itemType: "webpage",
-    title: art.title || "Sin título",
+    title: art.title || "Untitled",
     creators: creators.length > 0 ? creators : undefined,
     websiteTitle: "Heterodox Economics Newsletter",
     date: art.issue_date || "",
@@ -503,10 +484,9 @@ async function syncZoteroLibrary(showFeedback = false) {
 
   try {
     if (showFeedback) {
-      showZoteroModalStatus("Sincronizando con tu biblioteca de Zotero...", "loading");
+      showZoteroModalStatus(t("zotero.status_syncing"), "loading");
     }
 
-    // Query most recent items from user's library
     const endpoint = `https://api.zotero.org/users/${config.userId}/items?limit=100&sort=dateModified&direction=desc`;
     const res = await fetch(endpoint, {
       headers: {
@@ -537,16 +517,16 @@ async function syncZoteroLibrary(showFeedback = false) {
       renderArticles();
 
       if (showFeedback) {
-        showZoteroModalStatus(`¡Sincronización exitosa! (${items.length} ítems verificados en Zotero)`, "success");
-        showToast("¡Biblioteca de Zotero sincronizada! 🔄");
+        showZoteroModalStatus(t("zotero.status_sync_ok", { count: items.length }), "success");
+        showToast(t("toast.zotero_sync_success"));
       }
     } else if (showFeedback) {
-      showZoteroModalStatus(`Error al sincronizar con Zotero (${res.status})`, "error");
+      showZoteroModalStatus(t("zotero.status_sync_fail", { status: res.status }), "error");
     }
   } catch (err) {
     console.error("Error syncing Zotero library:", err);
     if (showFeedback) {
-      showZoteroModalStatus("No se pudo contactar con los servidores de Zotero.", "error");
+      showZoteroModalStatus(t("zotero.status_unreachable"), "error");
     }
   } finally {
     isSyncingZotero = false;
@@ -559,7 +539,7 @@ async function saveArticleToZotero(art, buttonEl) {
   const config = getZoteroConfig();
   if (!config.isConfigured) {
     openZoteroModal({
-      text: "Ingresa tu User ID y API Key de Zotero para activar el guardado directo en 1 clic.",
+      text: t("zotero.status_prompt_config"),
       type: "info"
     });
     return;
@@ -573,7 +553,7 @@ async function saveArticleToZotero(art, buttonEl) {
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
     </svg>
-    <span>Guardando...</span>
+    <span>${t("card.zotero_saving")}</span>
   `;
 
   try {
@@ -591,14 +571,14 @@ async function saveArticleToZotero(art, buttonEl) {
     if (res.status === 200 || res.status === 201) {
       markArticleAsSaved(art);
       renderArticles();
-      showToast("¡Guardado con éxito en tu biblioteca de Zotero! 📚");
+      showToast(t("toast.zotero_saved"));
     } else if (res.status === 403 || res.status === 401) {
       buttonEl.disabled = false;
       buttonEl.classList.remove("btn-zotero-loading");
       buttonEl.innerHTML = originalHtml;
-      showToast("Error de acceso: Verifica tu API Key de Zotero.");
+      showToast(t("toast.zotero_key_error"));
       openZoteroModal({
-        text: "La API Key ingresada no es válida o no tiene permisos de escritura.",
+        text: t("zotero.status_invalid_key"),
         type: "error"
       });
     } else {
@@ -607,18 +587,16 @@ async function saveArticleToZotero(art, buttonEl) {
       buttonEl.disabled = false;
       buttonEl.classList.remove("btn-zotero-loading");
       buttonEl.innerHTML = originalHtml;
-      showToast(`Error al guardar en Zotero (${res.status})`);
+      showToast(t("toast.zotero_save_error", { status: res.status }));
     }
   } catch (err) {
     console.error("Error connecting to Zotero API:", err);
     buttonEl.disabled = false;
     buttonEl.classList.remove("btn-zotero-loading");
     buttonEl.innerHTML = originalHtml;
-    showToast("Error de conexión con los servidores de Zotero.");
+    showToast(t("toast.zotero_network_error"));
   }
 }
-
-
 
 // Load Data
 async function loadData() {
@@ -656,7 +634,7 @@ async function loadData() {
     if (articlesContainer) {
       articlesContainer.innerHTML = `
         <div class="col-span-full alert alert-soft alert-error max-w-xl mx-auto my-8 border border-error/30">
-          <p>No se pudieron cargar los datos del feed. Por favor refresca la página.</p>
+          <p>${t("error.data_load")}</p>
         </div>
       `;
     }
@@ -671,21 +649,14 @@ function renderHeaderStats() {
     latestIssueBadge.textContent = `#${meta.latest_issue}`;
   }
   if (lastUpdatedEl && meta.updated_at) {
-    const d = new Date(meta.updated_at);
-    lastUpdatedEl.textContent = d.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    lastUpdatedEl.textContent = formatLocaleDate(meta.updated_at, getCurrentLanguage());
   }
 
   if (statTotalArticles && meta.total_articles_indexed) {
-    statTotalArticles.textContent = Number(meta.total_articles_indexed).toLocaleString();
+    statTotalArticles.textContent = Number(meta.total_articles_indexed).toLocaleString(SUPPORTED_LANGUAGES[getCurrentLanguage()]?.locale);
   }
   if (statTotalJournals && meta.total_journal_papers_indexed) {
-    statTotalJournals.textContent = Number(meta.total_journal_papers_indexed).toLocaleString();
+    statTotalJournals.textContent = Number(meta.total_journal_papers_indexed).toLocaleString(SUPPORTED_LANGUAGES[getCurrentLanguage()]?.locale);
   }
   if (statTotalIssues && meta.total_issues_indexed) {
     statTotalIssues.textContent = meta.total_issues_indexed;
@@ -700,10 +671,15 @@ function renderHeaderStats() {
 function renderEditorial() {
   if (!dataset || !dataset.issues || dataset.issues.length === 0) return;
   const latest = dataset.issues[0];
-  if (editorialIssueNum) editorialIssueNum.textContent = `Edición #${latest.issue_num}`;
-  if (editorialDate) editorialDate.textContent = `(${latest.date_str})`;
+  if (editorialIssueNum) {
+    editorialIssueNum.textContent = t("editorial.issue_prefix", { num: latest.issue_num });
+  }
+  if (editorialDate) {
+    const formattedDate = formatArticleDate(latest.iso_date || latest.date_str, getCurrentLanguage());
+    editorialDate.textContent = `(${formattedDate})`;
+  }
   if (editorialContent) {
-    editorialContent.innerHTML = latest.editorial_html || "<p>Sin nota editorial disponible para esta entrega.</p>";
+    editorialContent.innerHTML = latest.editorial_html || `<p>${t("editorial.empty")}</p>`;
   }
 }
 
@@ -713,19 +689,15 @@ function renderFilters() {
 
   // Issue Selector Options
   if (issueSelect) {
-    issueSelect.innerHTML = '<option value="ALL">Todas las ediciones</option>';
+    const previousSelection = currentIssue;
+    issueSelect.innerHTML = `<option value="ALL">${t("filters.all_issues")}</option>`;
     dataset.issues.forEach((issue) => {
       const opt = document.createElement("option");
       opt.value = issue.issue_num;
-      opt.textContent = `Edición #${issue.issue_num} (${issue.date_str})`;
-      if (String(currentIssue) === String(issue.issue_num)) opt.selected = true;
+      const formattedDate = formatArticleDate(issue.iso_date || issue.date_str, getCurrentLanguage());
+      opt.textContent = t("filters.issue_option", { num: issue.issue_num, date: formattedDate });
+      if (String(previousSelection) === String(issue.issue_num)) opt.selected = true;
       issueSelect.appendChild(opt);
-    });
-
-    issueSelect.addEventListener("change", (e) => {
-      currentIssue = e.target.value;
-      updateFilterSummary();
-      renderArticles();
     });
   }
 
@@ -733,13 +705,14 @@ function renderFilters() {
   if (categoryFiltersContainer) {
     categoryFiltersContainer.innerHTML = "";
     
-    // "Todos" pill
+    // "Todos" / "All" / "Tous" pill
     const totalCount = dataset.recent_articles.length;
-    const allBtn = createCategoryBtn("ALL", "Todos", totalCount, currentCategory === "ALL");
+    const allBtn = createCategoryBtn("ALL", t("categories.all"), totalCount, currentCategory === "ALL");
     categoryFiltersContainer.appendChild(allBtn);
 
     dataset.metadata.categories_summary.forEach((cat) => {
-      const btn = createCategoryBtn(cat.name, cat.name, cat.count, currentCategory === cat.name);
+      const translatedCat = translateCategory(cat.name, getCurrentLanguage());
+      const btn = createCategoryBtn(cat.name, translatedCat, cat.count, currentCategory === cat.name);
       categoryFiltersContainer.appendChild(btn);
     });
   }
@@ -778,7 +751,8 @@ function updateFilterSummary() {
 
   if (activeCategoryIndicator) {
     if (currentCategory !== "ALL") {
-      activeCategoryIndicator.textContent = `Categoría: ${currentCategory}`;
+      const translatedCat = translateCategory(currentCategory, getCurrentLanguage());
+      activeCategoryIndicator.textContent = t("results.active_category", { cat: translatedCat });
       activeCategoryIndicator.classList.remove("hidden");
       activeCategoryIndicator.classList.add("inline-flex");
     } else {
@@ -832,14 +806,19 @@ function renderArticles() {
   // Filter by Search Query
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim();
+    const currentLang = getCurrentLanguage();
     filtered = filtered.filter((art) => {
+      const translatedCat = translateCategory(art.category, currentLang).toLowerCase();
+      const bodyFormatted = formatArticleBodyText(art, currentLang).toLowerCase();
       return (
         (art.title && art.title.toLowerCase().includes(q)) ||
         (art.author && art.author.toLowerCase().includes(q)) ||
         (art.journal && art.journal.toLowerCase().includes(q)) ||
         (art.body_text && art.body_text.toLowerCase().includes(q)) ||
+        bodyFormatted.includes(q) ||
         (art.deadline && art.deadline.toLowerCase().includes(q)) ||
-        (art.category && art.category.toLowerCase().includes(q))
+        (art.category && art.category.toLowerCase().includes(q)) ||
+        translatedCat.includes(q)
       );
     });
   }
@@ -849,7 +828,9 @@ function renderArticles() {
 
   // Update Count
   if (resultsCountEl) {
-    resultsCountEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}`;
+    resultsCountEl.textContent = filtered.length === 1 
+      ? t("results.count_singular") 
+      : t("results.count_plural", { count: filtered.length });
   }
 
   // Set Container View Class
@@ -869,9 +850,9 @@ function renderArticles() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h3 class="text-base font-bold text-base-content">No se encontraron convocatorias o artículos</h3>
-        <p class="text-base-content/75 mt-1 text-xs leading-relaxed">Prueba ajustando los filtros de categoría o el término de búsqueda.</p>
-        <button id="reset-empty-btn" class="btn btn-secondary text-white btn-xs mt-4 rounded-xl">Restablecer todos los filtros</button>
+        <h3 class="text-base font-bold text-base-content">${t("empty.title")}</h3>
+        <p class="text-base-content/75 mt-1 text-xs leading-relaxed">${t("empty.desc")}</p>
+        <button id="reset-empty-btn" class="btn btn-secondary text-white btn-xs mt-4 rounded-xl font-bold">${t("empty.reset_btn")}</button>
       </div>
     `;
     const resetEmptyBtn = document.getElementById("reset-empty-btn");
@@ -888,18 +869,21 @@ function renderArticles() {
   }
 }
 
-// Compact Row Template (With 10% visible borders & AAA contrast)
+// Compact Row Template
 function renderListRow(art, idx) {
   const isJournal = art.category === "Journals" && art.journal;
   const badgeClass = getCategoryBadgeClass(art.category);
+  const categoryDisplayName = translateCategory(art.category, getCurrentLanguage());
   const isSaved = isArticleSavedInZotero(art);
   const canSaveZotero = isZoteroEligible(art);
   const primaryLink = getPrimaryArticleLink(art);
+  const formattedDate = formatArticleDate(art.iso_date || art.issue_date, getCurrentLanguage());
+  const formattedDeadline = formatDeadlineDate(art.deadline, getCurrentLanguage());
   
   const deadlineBadge = art.deadline
     ? `<span class="badge badge-deadline text-[11px] font-bold flex items-center gap-1 shrink-0 rounded-md">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span>Plazo: ${art.deadline}</span>
+        <span>${t("card.deadline", { date: formattedDeadline })}</span>
       </span>`
     : "";
 
@@ -907,20 +891,20 @@ function renderListRow(art, idx) {
   if (canSaveZotero) {
     if (isSaved) {
       zoteroBtnHtml = `
-        <span class="btn btn-xs btn-zotero btn-zotero-saved gap-1 font-bold rounded-lg cursor-default shadow-xs" title="Este artículo ya está guardado en tu biblioteca de Zotero">
+        <span class="btn btn-xs btn-zotero btn-zotero-saved gap-1 font-bold rounded-lg cursor-default shadow-xs" title="${t("card.zotero_saved_title")}">
           <svg class="w-3.5 h-3.5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
           </svg>
-          <span>En Zotero</span>
+          <span>${t("card.zotero_saved_btn")}</span>
         </span>
       `;
     } else {
       zoteroBtnHtml = `
-        <button type="button" class="btn btn-xs btn-zotero gap-1 font-bold rounded-lg shadow-xs" data-zotero-index="${idx}" title="Guardar en mi biblioteca de Zotero">
+        <button type="button" class="btn btn-xs btn-zotero gap-1 font-bold rounded-lg shadow-xs" data-zotero-index="${idx}" title="${t("card.zotero_save_title")}">
           <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
             <path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/>
           </svg>
-          <span>Zotero</span>
+          <span>${t("card.zotero_save_btn")}</span>
         </button>
       `;
     }
@@ -930,9 +914,9 @@ function renderListRow(art, idx) {
     <article class="list-view-row bg-base-100 border border-base-300 rounded-2xl p-4 shadow-xs hover:border-secondary/60 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="min-w-0 flex-grow">
         <div class="flex items-center gap-2 flex-wrap mb-1.5">
-          <span class="badge ${badgeClass} text-[11px] px-2.5 py-0.5 rounded-md">${art.category}</span>
+          <span class="badge ${badgeClass} text-[11px] px-2.5 py-0.5 rounded-md">${categoryDisplayName}</span>
           ${isJournal ? `<span class="text-xs font-bold text-primary truncate max-w-[280px]" title="${art.journal}">📖 ${art.journal}</span>` : ""}
-          <span class="text-[11px] font-bold text-base-content/85">#${art.issue_num} (${art.issue_date})</span>
+          <span class="text-[11px] font-bold text-base-content/85">${t("card.issue_format", { num: art.issue_num, date: formattedDate })}</span>
           ${deadlineBadge}
         </div>
 
@@ -951,44 +935,48 @@ function renderListRow(art, idx) {
 
       <div class="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 w-full sm:w-auto justify-end">
         ${zoteroBtnHtml}
-        <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg" title="Abrir enlace directo">
-          <span>Abrir</span>
+        <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg" title="${t("card.open_title")}">
+          <span>${t("card.open_btn")}</span>
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
         </a>
-        <a href="${art.newsletter_link || art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-xs border-base-300 text-base-content hover:bg-secondary hover:text-white hover:border-secondary font-bold rounded-lg transition-all" title="Ver contexto en newsletter">
-          <span>Newsletter</span>
+        <a href="${art.newsletter_link || art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-xs border-base-300 text-base-content hover:bg-secondary hover:text-white hover:border-secondary font-bold rounded-lg transition-all" title="${t("card.newsletter_title")}">
+          <span>${t("card.newsletter_row_btn")}</span>
         </a>
       </div>
     </article>
   `;
 }
 
-// Grid Card Template (With 10% visible borders and Color Hunt palette)
+// Grid Card Template
 function renderGridCard(art, idx) {
   const isJournal = art.category === "Journals" && art.journal;
   const badgeClass = getCategoryBadgeClass(art.category);
+  const categoryDisplayName = translateCategory(art.category, getCurrentLanguage());
   const isSaved = isArticleSavedInZotero(art);
   const canSaveZotero = isZoteroEligible(art);
   const primaryLink = getPrimaryArticleLink(art);
+  const formattedDate = formatArticleDate(art.iso_date || art.issue_date, getCurrentLanguage());
+  const formattedDeadline = formatDeadlineDate(art.deadline, getCurrentLanguage());
+  const bodyTextDisplay = formatArticleBodyText(art, getCurrentLanguage());
   
   let zoteroBtnHtml = "";
   if (canSaveZotero) {
     if (isSaved) {
       zoteroBtnHtml = `
-        <span class="btn btn-xs btn-zotero btn-zotero-saved gap-1 font-bold rounded-lg shadow-xs cursor-default" title="Este artículo ya está guardado en tu biblioteca de Zotero">
+        <span class="btn btn-xs btn-zotero btn-zotero-saved gap-1 font-bold rounded-lg shadow-xs cursor-default" title="${t("card.zotero_saved_title")}">
           <svg class="w-3.5 h-3.5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
           </svg>
-          <span>En Zotero</span>
+          <span>${t("card.zotero_saved_btn")}</span>
         </span>
       `;
     } else {
       zoteroBtnHtml = `
-        <button type="button" class="btn btn-xs btn-zotero gap-1 font-bold rounded-lg shadow-xs" data-zotero-index="${idx}" title="Guardar en mi biblioteca de Zotero">
+        <button type="button" class="btn btn-xs btn-zotero gap-1 font-bold rounded-lg shadow-xs" data-zotero-index="${idx}" title="${t("card.zotero_save_title")}">
           <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
             <path d="M4.54 3.6h14.92v3.74l-8.62 10.82h8.62V22H4.54v-3.74l8.62-10.82H4.54V3.6z"/>
           </svg>
-          <span>Zotero</span>
+          <span>${t("card.zotero_save_btn")}</span>
         </button>
       `;
     }
@@ -997,11 +985,10 @@ function renderGridCard(art, idx) {
   const deadlineHtml = art.deadline
     ? `<div class="badge badge-deadline text-xs font-bold px-2.5 py-1 rounded-md mt-2 flex items-center gap-1.5 w-fit">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span>Plazo: ${art.deadline}</span>
+        <span>${t("card.deadline", { date: formattedDeadline })}</span>
       </div>`
     : "";
 
-  // Filter external links: Eliminate "Abrir Artículo" / "Abrir enlace", primary link, and duplicates
   const cleanPrimaryUrl = (primaryLink || "").trim().replace(/\/$/, "");
   const cleanMainUrl = (art.link || "").trim().replace(/\/$/, "");
 
@@ -1009,14 +996,10 @@ function renderGridCard(art, idx) {
     const cleanUrl = (l.url || "").trim().replace(/\/$/, "");
     const textLower = (l.text || "").trim().toLowerCase();
     
-    // Check if duplicate of main link or primary link
     if (cleanUrl === cleanMainUrl || cleanUrl === cleanPrimaryUrl) return false;
-    
-    // Check if generic "Abrir artículo" / "Abrir enlace" label or "here"
     if (textLower === "abrir artículo" || textLower === "abrir articulo" || textLower === "abrir enlace" || textLower === "abrir" || textLower === "here") {
       return false;
     }
-    
     return true;
   });
 
@@ -1041,8 +1024,8 @@ function renderGridCard(art, idx) {
         
         <!-- Header Category & Date -->
         <div class="flex items-start justify-between gap-2 flex-wrap mb-2.5">
-          <span class="badge ${badgeClass} text-xs px-2.5 py-0.5 rounded-md">${art.category}</span>
-          <span class="text-xs text-base-content/85 font-bold">Ed. #${art.issue_num} • ${art.issue_date}</span>
+          <span class="badge ${badgeClass} text-xs px-2.5 py-0.5 rounded-md">${categoryDisplayName}</span>
+          <span class="text-xs text-base-content/85 font-bold">${t("card.issue_format", { num: art.issue_num, date: formattedDate })}</span>
         </div>
 
         ${
@@ -1073,9 +1056,9 @@ function renderGridCard(art, idx) {
         ${deadlineHtml}
 
         ${
-          art.body_text
+          bodyTextDisplay
             ? `<p class="text-xs text-base-content font-medium mt-3 line-clamp-3 leading-relaxed">
-                ${art.body_text}
+                ${bodyTextDisplay}
               </p>`
             : ""
         }
@@ -1083,17 +1066,17 @@ function renderGridCard(art, idx) {
         ${extLinksHtml}
       </div>
 
-      <!-- Footer Actions: Shortened "Abrir", Conditional "Zotero", and "En newsletter" -->
+      <!-- Footer Actions -->
       <div class="bg-base-200/60 px-6 py-3.5 border-t border-base-300/60 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg shadow-xs" title="Abrir enlace directo">
-            <span>Abrir</span>
+          <a href="${primaryLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs gap-1 font-bold rounded-lg shadow-xs" title="${t("card.open_title")}">
+            <span>${t("card.open_btn")}</span>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
           </a>
           ${zoteroBtnHtml}
         </div>
-        <a href="${art.newsletter_link || art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-xs border-base-300 text-base-content hover:bg-secondary hover:text-white hover:border-secondary font-bold gap-1.5 px-3 py-1.5 rounded-lg transition-all" title="Ver contexto completo en newsletter">
-          <span>En newsletter</span>
+        <a href="${art.newsletter_link || art.link}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-xs border-base-300 text-base-content hover:bg-secondary hover:text-white hover:border-secondary font-bold gap-1.5 px-3 py-1.5 rounded-lg transition-all" title="${t("card.newsletter_title")}">
+          <span>${t("card.newsletter_btn")}</span>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </a>
       </div>
@@ -1111,6 +1094,76 @@ function resetAllFilters() {
   if (issueSelect) issueSelect.value = "ALL";
   renderFilters();
   renderArticles();
+}
+
+// Apply Language & Translations to Full DOM
+function applyTranslations(lang = getCurrentLanguage()) {
+  const langConfig = SUPPORTED_LANGUAGES[lang] || SUPPORTED_LANGUAGES.es;
+
+  // Update HTML lang attribute
+  document.documentElement.setAttribute("lang", lang);
+
+  // Update document title & meta description
+  document.title = t("page.title", {}, lang);
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) {
+    metaDesc.setAttribute("content", t("page.meta_desc", {}, lang));
+  }
+
+  // Update Language Switcher UI in header (Code only, no flags)
+  if (currentLangCode) currentLangCode.textContent = langConfig.code;
+
+  // Update Checkmarks in Dropdown Menu
+  langOptionBtns.forEach((btn) => {
+    const code = btn.getAttribute("data-lang-code");
+    const check = btn.querySelector(".lang-check");
+    if (check) {
+      if (code === lang) {
+        check.classList.remove("hidden");
+      } else {
+        check.classList.add("hidden");
+      }
+    }
+  });
+
+  // Update text elements with [data-i18n]
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (key) {
+      el.textContent = t(key, {}, lang);
+    }
+  });
+
+  // Update HTML elements with [data-i18n-html]
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-html");
+    if (key) {
+      el.innerHTML = t(key, {}, lang);
+    }
+  });
+
+  // Update placeholders with [data-i18n-placeholder]
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (key) {
+      el.placeholder = t(key, {}, lang);
+    }
+  });
+
+  // Update title / tooltip attributes with [data-i18n-title]
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-title");
+    if (key) {
+      el.title = t(key, {}, lang);
+    }
+  });
+
+  // Re-render Dynamic Sections
+  renderHeaderStats();
+  renderEditorial();
+  renderFilters();
+  renderArticles();
+  updateZoteroHeaderUI();
 }
 
 // Setup Event Listeners
@@ -1186,7 +1239,6 @@ function setupEventListeners() {
     viewListBtn.addEventListener("click", () => updateViewModeUI("list"));
   }
 
-  // Set initial view button state
   if (viewMode === "list") {
     updateViewModeUI("list");
   }
@@ -1203,7 +1255,44 @@ function setupEventListeners() {
       document.documentElement.setAttribute("data-theme", currentTheme);
       localStorage.setItem("theme", currentTheme);
       updateThemeUI();
-      showToast(currentTheme === "dark" ? "Modo oscuro activado 🌙" : "Modo claro activado ☀️");
+      showToast(currentTheme === "dark" ? t("toast.dark_mode") : t("toast.light_mode"));
+    });
+  }
+
+  // Language Dropdown Toggle & Selection (Clean, No Flags)
+  if (langToggleBtn && langDropdownMenu) {
+    langToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isHidden = langDropdownMenu.classList.contains("hidden");
+      if (isHidden) {
+        langDropdownMenu.classList.remove("hidden");
+        langToggleBtn.setAttribute("aria-expanded", "true");
+      } else {
+        langDropdownMenu.classList.add("hidden");
+        langToggleBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    // Close language dropdown on outside click
+    document.addEventListener("click", (e) => {
+      if (langDropdownWrapper && !langDropdownWrapper.contains(e.target)) {
+        langDropdownMenu.classList.add("hidden");
+        langToggleBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    // Handle Language Selection
+    langOptionBtns.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const selectedLang = btn.getAttribute("data-lang-code");
+        if (selectedLang) {
+          setLanguage(selectedLang);
+          applyTranslations(selectedLang);
+          langDropdownMenu.classList.add("hidden");
+          langToggleBtn.setAttribute("aria-expanded", "false");
+        }
+      });
     });
   }
 
@@ -1246,11 +1335,11 @@ function setupEventListeners() {
       const collectionKey = (zoteroCollectionInput ? zoteroCollectionInput.value : "").trim();
 
       if (!userId || !apiKey) {
-        showZoteroModalStatus("Por favor ingresa tanto el User ID como la API Key.", "error");
+        showZoteroModalStatus(t("zotero.status_missing_fields"), "error");
         return;
       }
 
-      showZoteroModalStatus("Verificando credenciales con Zotero...", "loading");
+      showZoteroModalStatus(t("zotero.status_verifying"), "loading");
       if (zoteroSaveBtn) zoteroSaveBtn.disabled = true;
 
       try {
@@ -1263,12 +1352,12 @@ function setupEventListeners() {
 
         if (!testRes.ok) {
           if (testRes.status === 403 || testRes.status === 401) {
-            throw new Error("Clave API no autorizada o sin permisos suficientes.");
+            throw new Error(t("zotero.err_unauthorized"));
           }
           if (testRes.status === 404) {
-            throw new Error("User ID no encontrado en los registros de Zotero.");
+            throw new Error(t("zotero.err_not_found"));
           }
-          throw new Error(`Error de conexión con Zotero (${testRes.status} ${testRes.statusText})`);
+          throw new Error(`Error (${testRes.status} ${testRes.statusText})`);
         }
 
         // Save valid config to localStorage
@@ -1276,9 +1365,9 @@ function setupEventListeners() {
         localStorage.setItem("zotero_api_key", apiKey);
         localStorage.setItem("zotero_collection_key", collectionKey);
 
-        showZoteroModalStatus("¡Conexión verificada y credenciales guardadas con éxito!", "success");
+        showZoteroModalStatus(t("zotero.status_verified"), "success");
         updateZoteroHeaderUI();
-        showToast("¡Zotero configurado correctamente! 🎉");
+        showToast(t("toast.zotero_configured"));
 
         // Trigger sync in background
         syncZoteroLibrary(false);
@@ -1289,7 +1378,7 @@ function setupEventListeners() {
         }, 1000);
       } catch (err) {
         console.error("Zotero verification error:", err);
-        showZoteroModalStatus(err.message || "Error al verificar conexión con Zotero.", "error");
+        showZoteroModalStatus(err.message || "Error", "error");
         if (zoteroSaveBtn) zoteroSaveBtn.disabled = false;
       }
     });
@@ -1311,11 +1400,11 @@ function setupEventListeners() {
       if (zoteroCollectionInput) zoteroCollectionInput.value = "";
 
       updateZoteroHeaderUI();
-      showZoteroModalStatus("Credenciales eliminadas de este navegador.", "info");
+      showZoteroModalStatus(t("zotero.status_cleared"), "info");
       zoteroDisconnectBtn.classList.add("hidden");
       if (zoteroSyncBtn) zoteroSyncBtn.classList.add("hidden");
       renderArticles();
-      showToast("Conexión con Zotero desvinculada.");
+      showToast(t("toast.zotero_disconnected"));
     });
   }
 
@@ -1368,9 +1457,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   populateFeedUrls();
   setupCopyButtons();
   setupEventListeners();
+  applyTranslations(getCurrentLanguage());
   await loadData();
   syncZoteroLibrary(false);
 });
-
-
-
