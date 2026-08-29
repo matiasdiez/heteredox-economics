@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://matiasdiez.github.io/heteredox-economics/sitemap.xml
