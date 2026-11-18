@@ -10,8 +10,9 @@ on:
       - main
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# and pushing the data commits that keep the scheduled workflow alive.
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -29,6 +30,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -76,3 +79,61 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # Persist the regenerated feeds/dataset so the repository does not drift
+      # from what is published. Only commits when a new issue actually appears,
+      # because data.json embeds updated_at and would otherwise look dirty daily.
+      - name: Commit generated feeds when a new issue is published
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          [ -f public/data.json ] || exit 0
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          new_issue=$(python3 -c "import json;print(json.load(open('public/data.json'))['metadata']['latest_issue'])")
+          old_issue=$(git show HEAD:public/data.json | python3 -c "import json,sys;print(json.load(sys.stdin)['metadata']['latest_issue'])" || echo "")
+
+          echo "Latest issue in repo: ${old_issue:-unknown} | scraped: ${new_issue}"
+          if [ "$new_issue" = "$old_issue" ]; then
+            echo "No new issue, nothing to commit."
+            exit 0
+          fi
+
+          git add public/
+          if git diff --staged --quiet; then
+            exit 0
+          fi
+
+          git commit -m "Auto-update HeterodoxNews feeds and dataset [skip ci]"
+          git pull --rebase --autostash origin main
+          git push origin HEAD:main
+
+      # GitHub disables `schedule` triggers in public repos after 60 days without
+      # repository activity. Committing a tiny heartbeat when the repo has been
+      # idle for 45 days keeps the cron alive (e.g. during newsletter breaks).
+      - name: Keep the scheduled workflow alive
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          last_commit=$(git log -1 --format=%ct)
+          idle_days=$(( ($(date +%s) - last_commit) / 86400 ))
+          echo "Last repository activity: ${idle_days} day(s) ago."
+
+          if [ "$idle_days" -lt 45 ]; then
+            echo "Activity is recent enough, no keepalive needed."
+            exit 0
+          fi
+
+          mkdir -p .github
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/keepalive
+          git add .github/keepalive
+          git commit -m "chore: keepalive to preserve scheduled workflow [skip ci]"
+          git pull --rebase --autostash origin main
+          git push origin HEAD:main

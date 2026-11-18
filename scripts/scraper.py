@@ -57,7 +57,10 @@ def discover_available_issues() -> list[int]:
             issues.add(int(num_str))
     
     if not issues:
-        issues.add(363)
+        raise RuntimeError(
+            f"Could not read the issue index at {BASE_URL}. "
+            "Aborting to avoid regenerating the feeds from incomplete data."
+        )
     
     max_known = max(issues)
     print(f"Max issue found in index: {max_known}")
@@ -606,16 +609,41 @@ def main():
         time.sleep(0.3)
         
     print(f"\nSuccessfully parsed {len(parsed_issues)} issues.")
+
+    if not parsed_issues:
+        raise RuntimeError("No issue could be parsed. Aborting without touching the published feeds.")
+
+    # Safety net: never publish content older than what is already online.
+    # A failed fetch/parse of the newest issue used to silently regress the site.
+    newest_discovered = max(all_issue_numbers)
+    if parsed_issues[0]["issue_num"] != newest_discovered:
+        raise RuntimeError(
+            f"Issue #{newest_discovered} exists but could not be parsed; "
+            f"newest parsed issue is #{parsed_issues[0]['issue_num']}. "
+            "Aborting so the site is not downgraded."
+        )
+
+    public_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
+    data_json_path = os.path.join(public_dir, "data.json")
+    if os.path.exists(data_json_path):
+        try:
+            with open(data_json_path, "r", encoding="utf-8") as f:
+                previously_published = json.load(f)["metadata"]["latest_issue"]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            previously_published = None
+        if previously_published and parsed_issues[0]["issue_num"] < previously_published:
+            raise RuntimeError(
+                f"Scraped latest issue #{parsed_issues[0]['issue_num']} is older than the "
+                f"already published #{previously_published}. Aborting to avoid a regression."
+            )
     
     # Define outputs
-    public_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
     feed_xml_path = os.path.join(public_dir, "feed.xml")
     articles_xml_path = os.path.join(public_dir, "articles.xml")
     journals_xml_path = os.path.join(public_dir, "journals.xml")
     cfp_xml_path = os.path.join(public_dir, "cfp.xml")
     jobs_xml_path = os.path.join(public_dir, "jobs.xml")
     books_xml_path = os.path.join(public_dir, "books.xml")
-    data_json_path = os.path.join(public_dir, "data.json")
     
     # General Feeds
     generate_issues_rss(parsed_issues, feed_xml_path)
