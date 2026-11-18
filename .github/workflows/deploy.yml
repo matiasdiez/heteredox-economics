@@ -45,7 +45,24 @@ jobs:
 
       - name: Run Newsletter Scraper & RSS Generator
         run: |
-          python3 scripts/scraper.py
+          set -uo pipefail
+          # The newsletter host occasionally drops requests from CI runners,
+          # and the scraper now fails hard on incomplete data by design.
+          # Retry the whole run before giving up.
+          for attempt in 1 2 3; do
+            echo "::group::Scraper attempt ${attempt}/3"
+            if python3 scripts/scraper.py; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            if [ "$attempt" -lt 3 ]; then
+              echo "Attempt ${attempt} failed (transient network/source error). Retrying in 30s..."
+              sleep 30
+            fi
+          done
+          echo "Scraper failed after 3 attempts." >&2
+          exit 1
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
